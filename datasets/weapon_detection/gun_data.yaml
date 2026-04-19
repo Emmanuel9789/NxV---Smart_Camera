@@ -1,0 +1,5 @@
+train: /home/emmanuel/camera_project/datasets/weapon_detection/train
+val: /home/emmanuel/camera_project/datasets/weapon_detection/val
+
+nc: 1 #number of classes
+names: ['gun'] #class names
