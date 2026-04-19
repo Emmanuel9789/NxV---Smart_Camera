@@ -1,147 +1,148 @@
-Interpretable Multi-Factor Threat Scoring for Intelligent Surveillance Systems
-Project Overview
+# Interpretable Multi-Factor Threat Scoring for Intelligent Surveillance Systems
 
-This project explores the design and implementation of an interpretable threat scoring algorithm for intelligent surveillance systems. Modern security systems increasingly rely on artificial intelligence to detect suspicious behavior. However, many of these systems operate as black-box models, making it difficult for human operators to understand how decisions are made.
+## Project Overview
 
-This research proposes a transparent algorithm that combines multiple behavioral indicators into a human-understandable threat score. The goal is to improve trust, interpretability, and computational efficiency in AI-assisted surveillance systems.
+This project explores the design and implementation of an **interpretable threat scoring algorithm for intelligent surveillance systems**. Modern security systems increasingly rely on artificial intelligence to detect suspicious behavior. However, many of these systems operate as **black-box models**, making it difficult for human operators to understand how decisions are made.
 
-The project is part of a research study titled:
+This research proposes a **transparent algorithm** that combines multiple behavioral indicators into a human-understandable **threat score**. The goal is to improve **trust, interpretability, and computational efficiency** in AI-assisted surveillance systems.
 
-Design and Complexity Analysis of an Interpretable Multi-Factor Threat Scoring Algorithm for Data Structures and Algorithms
+This project is part of the research study titled:
 
-Research Objectives
+**Design and Complexity Analysis of an Interpretable Multi-Factor Threat Scoring Algorithm for Data Structures and Algorithms**
+
+---
+
+# Research Objectives
 
 The main objectives of this project include:
 
-Designing an interpretable threat scoring algorithm for intelligent surveillance systems
-Combining multiple behavioral indicators into a transparent threat score
-Analyzing the computational complexity of the algorithm
-Evaluating the feasibility of real-time deployment using efficient data structures
+- Designing an interpretable threat scoring algorithm for intelligent surveillance systems  
+- Combining multiple behavioral indicators into a transparent threat score  
+- Analyzing the computational complexity of the algorithm  
+- Evaluating the feasibility of real-time deployment using efficient data structures  
 
-This project emphasizes algorithm design and complexity analysis, making it suitable for research in Data Structures and Algorithms (DSA).
+This project emphasizes **algorithm design and complexity analysis**, making it suitable for research in **Data Structures and Algorithms (DSA)**.
 
-System Architecture
+---
+
+# System Architecture
 
 The proposed surveillance system follows the pipeline below:
 
-Camera Feed
-↓
-Object Detection (YOLO)
-↓
-Behavior Indicators Extraction
-(weapon detection, loitering behavior, aggressive movement)
-↓
-Multi-Factor Threat Scoring Algorithm
-↓
-Threat Score Generation
-↓
-Human-Readable Explanation of the Threat
 
-The system combines computer vision outputs with an interpretable algorithm that generates threat scores and explanations for detected events.
+The system combines **computer vision outputs** with an **interpretable algorithm** that generates threat scores and explanations for detected events.
 
-Threat Scoring Concept
+---
 
-The threat scoring algorithm combines different behavioral indicators using weighted scoring.
+# Threat Scoring Concept
+
+The threat scoring algorithm combines different behavioral indicators using **weighted scoring**.
 
 Example scoring model:
 
-Threat Score =
-w1 × weapon_detection
-
-w2 × loitering_behavior
-w3 × aggressive_movement
 
 Each indicator contributes to the final score, allowing the system to provide explanations such as:
 
-"Weapon detected with aggressive movement"
-"Suspicious loitering behavior detected"
+- "Weapon detected with aggressive movement"
+- "Suspicious loitering behavior detected"
 
-This approach improves interpretability compared to traditional black-box AI systems.
+This approach improves **interpretability** compared to traditional black-box AI systems.
 
-Data Structures and Algorithm Concepts
+---
 
-The system incorporates several important concepts from Data Structures and Algorithms:
+# Data Structures and Algorithm Concepts
 
-Sliding Window
+The system incorporates several important concepts from **Data Structures and Algorithms (DSA)**.
 
-Used to analyze recent behavioral events within a limited time frame, allowing the system to track suspicious activity efficiently without processing the entire history of events.
+### Sliding Window
 
-Priority Queue
+Used to analyze **recent behavioral events within a limited time frame**, allowing the system to track suspicious activity efficiently without processing the entire history of events.
 
-Events can be prioritized based on threat level so that higher-risk events are processed first.
+### Priority Queue
 
-Weighted Scoring Algorithm
+Events can be **prioritized based on threat level**, ensuring higher-risk events are processed first.
 
-Multiple behavioral indicators are combined into a single interpretable threat score using weighted values.
+### Weighted Scoring Algorithm
 
-Complexity Analysis
+Multiple behavioral indicators are combined into a **single interpretable threat score** using weighted values.
 
-The algorithm is designed to operate efficiently in real-time environments by maintaining low computational complexity.
+### Complexity Analysis
 
-Current Progress
+The algorithm is designed to operate efficiently in **real-time environments** by maintaining low computational complexity.
 
-Current development progress includes:
+---
 
-Completed:
+# Current Progress
 
-Weapon detection using YOLO object detection
-Video frame processing pipeline
-Initial threat scoring framework design
+### Completed
 
-In Progress:
+- Weapon detection using **YOLO object detection**
+- Video frame processing pipeline
+- Initial threat scoring framework design
 
-Multi-factor behavioral indicator integration
-Sliding window event tracking
-Threat scoring algorithm implementation
+### In Progress
 
-Planned:
+- Multi-factor behavioral indicator integration
+- Sliding window event tracking
+- Threat scoring algorithm implementation
 
-Simulation of threat scenarios
-Algorithm complexity evaluation
-Real-time performance testing
-Experimental Simulation
+### Planned
+
+- Simulation of threat scenarios
+- Algorithm complexity evaluation
+- Real-time performance testing
+
+---
+
+# Experimental Simulation
 
 Planned experiments will evaluate:
 
-Threat score computation behavior
-Algorithm scalability with increasing event volumes
-Real-time processing performance
-Computational complexity of the scoring algorithm
+- Threat score computation behavior
+- Algorithm scalability with increasing event volumes
+- Real-time processing performance
+- Computational complexity of the scoring algorithm
 
-Simulation scenarios will include combinations of behavioral indicators such as weapon detection, suspicious movement, and prolonged presence.
+Simulation scenarios will include combinations of behavioral indicators such as:
 
-Repository Structure
+- weapon detection
+- suspicious movement
+- prolonged presence
 
-smart-camera-research
-│
-├── main.py
-├── faceDetection.py
-│
-├── algorithms
-│ └── threat_scoring.py
-│
-├── simulations
-│ └── threat_simulation.py
-│
-├── datasets
-│
-└── research
-└── paper_draft.md
+---
 
-Research Context
+# Repository Structure
 
-This repository contains the experimental and implementation work supporting the research paper:
 
-Design and Complexity Analysis of an Interpretable Multi-Factor Threat Scoring Algorithm
+---
 
-The research focuses on designing interpretable algorithms for intelligent surveillance systems while analyzing their computational efficiency and scalability.
+# Research Context
 
-Future Work
+This repository contains the **experimental and implementation work supporting the research paper**:
+
+**Design and Complexity Analysis of an Interpretable Multi-Factor Threat Scoring Algorithm**
+
+The research focuses on designing **interpretable algorithms for intelligent surveillance systems** while analyzing their **computational efficiency and scalability**.
+
+---
+
+# Future Work
 
 Future development will focus on:
 
-Expanding behavioral detection capabilities
-Improving threat scoring accuracy
-Implementing real-time event prioritization
-Conducting large-scale simulation experiments
-Evaluating system performance under real-world scenarios
+- Expanding behavioral detection capabilities  
+- Improving threat scoring accuracy  
+- Implementing real-time event prioritization  
+- Conducting large-scale simulation experiments  
+- Evaluating system performance under real-world scenarios  
+
+---
+
+# Technologies Used
+
+- Python
+- OpenCV
+- YOLO Object Detection
+- Computer Vision
+- Data Structures and Algorithms
+- Real-Time Event Processing
