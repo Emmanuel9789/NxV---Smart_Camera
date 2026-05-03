@@ -3,3 +3,8 @@ __pycache__/
 *.pyc
 .env
 
+# VS Code
+.vscode/
+
+# Logs
+*.log
