@@ -3,13 +3,15 @@ import cv2 # OpenCV library for image processing
 #This class will handle All motion detection logic
 class MotionDetector:
     def __init__(self, min_area = 1500):
-        """min_area:
+        
+        """
+        min_area:
          
          This is the minimum size of movement to consider as "real motion"
          Helps ignore tiny noise 
          
         """
-        self.reference_frame = None # This stores the base image
+        self.reference_frame = None #This stores the base image
         self.min_area = min_area #Min movement size threshold
         self.motion_counter = 0
         
@@ -78,7 +80,7 @@ class MotionDetector:
         if self.motion_counter > 2 and len(valid_contours) > 0:
             motion_detected = True
             
-            # Merge all contours into ONE big region
+            #Merge all contours into ONE big region
             x_min, y_min = 9999, 9999
             x_max, y_max = 0, 0
             
@@ -105,7 +107,7 @@ class MotionDetector:
                 self.reference_frame, 0.9, gray, 0.1, 0
             )
         except:
-            # If anything goes wrong, reset safely
+            #If anything goes wrong, reset safely
             self.reference_frame = gray
             return motion_detected, boxes
 

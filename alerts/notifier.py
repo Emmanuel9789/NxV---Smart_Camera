@@ -1,18 +1,17 @@
 """
-
 Sends SMS alerts to the owner and trusted contact via Twilio.
 Handles:
   - Owner alert with threat summary
   - Trusted contact alert when owner unreachable
   - Police prompt message with pre-written evidence summary
   - Rate limiting so the same alert doesn't spam every frame
-
 """
 
 import time
 import os
 from datetime import datetime
-
+from dotenv import load_dotenv
+load_dotenv()
 
 # ── Try importing Twilio ───────────────────────────────────────────────────────
 try:
@@ -24,12 +23,7 @@ except ImportError:
     print("  Run: pip install twilio --break-system-packages")
 
 
-# ── Config — fill these in or set as environment variables ────────────────────
-# export NXV_TWILIO_SID="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-# export NXV_TWILIO_TOKEN="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-# export NXV_TWILIO_FROM="+18446563069"
-# export NXV_OWNER_PHONE="+14437641048"
-# export NXV_CONTACT_PHONE="+16672006967"
+
 
 TWILIO_SID      = os.environ.get("NXV_TWILIO_SID",    "")
 TWILIO_TOKEN    = os.environ.get("NXV_TWILIO_TOKEN",   "")
@@ -151,6 +145,54 @@ class Notifier:
         )
 
         return self._send(OWNER_PHONE, msg, tag="police")
+    
+    def call_owner(self,
+               threat_score : int,
+               flags        : list) -> bool:
+        """
+        Make an actual phone call to the owner.
+        Twilio reads out the threat summary via text-to-speech.
+        Used for EMERGENCY escalation.
+        """
+        if not self._can_send("call", "EMERGENCY"):
+            return False
+
+        if not self._client or not OWNER_PHONE:
+            print(f"\n[NxV Notifier DRY RUN — CALL → {OWNER_PHONE or 'NO_NUMBER_SET'}]")
+            print(f"  Would call with: EMERGENCY alert, score {threat_score}/100")
+            self._last_sent["call"] = time.time()
+            return True
+
+        flag_str = ", ".join(flags[:3]) or "threat detected"
+
+        # Twilio TwiML — text to speech message read on the call
+        twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+    <Response>
+        <Say voice="alice">
+            NxV Security Alert. Emergency threat detected at your home.
+            Threat score: {threat_score} out of 100.
+            Signals detected: {flag_str}.
+            Please check your camera feed immediately or call 911.
+        </Say>
+        <Pause length="1"/>
+        <Say voice="alice">
+            Repeating. NxV Emergency Alert. Threat score {threat_score}.
+            {flag_str}.
+        </Say>
+    </Response>"""
+
+        try:
+            call = self._client.calls.create(
+                twiml = twiml,
+                to    = OWNER_PHONE,
+                from_ = TWILIO_FROM,
+            )
+            print(f"[NxV Notifier] Call initiated → {OWNER_PHONE} | SID: {call.sid}")
+            self._last_sent["call"] = time.time()
+            return True
+        except Exception as e:
+            print(f"[NxV Notifier] Call failed: {e}")
+            return False
 
     # ── Internals ──────────────────────────────────────────────────────────────
 

@@ -1,0 +1,83 @@
+[
+  {
+    "frame": 1,
+    "description": "Person walking past \u2014 no threat",
+    "score": 1,
+    "escalation": "NONE",
+    "flags": [
+      "passing_motion"
+    ]
+  },
+  {
+    "frame": 2,
+    "description": "Person loitering near door (daytime)",
+    "score": 12,
+    "escalation": "NONE",
+    "flags": [
+      "near_door_zone",
+      "behavior:loitering(25s)"
+    ]
+  },
+  {
+    "frame": 3,
+    "description": "Person loitering at night",
+    "score": 16,
+    "escalation": "NONE",
+    "flags": [
+      "time:night",
+      "behavior:loitering(30s)",
+      "behavior:pacing"
+    ]
+  },
+  {
+    "frame": 4,
+    "description": "Masked person at night near door",
+    "score": 100,
+    "escalation": "EMERGENCY",
+    "flags": [
+      "BREAK_IN_ATTEMPT(late_night)"
+    ]
+  },
+  {
+    "frame": 5,
+    "description": "Known dangerous person detected",
+    "score": 55,
+    "escalation": "ALERT",
+    "flags": [
+      "time:night",
+      "known_danger_floor",
+      "face:known_dangerous",
+      "behavior:loitering(8s)"
+    ]
+  },
+  {
+    "frame": 6,
+    "description": "Weapon detected on person",
+    "score": 60,
+    "escalation": "ALERT",
+    "flags": [
+      "weapon:gun",
+      "time:evening",
+      "weapon_floor"
+    ]
+  },
+  {
+    "frame": 7,
+    "description": "Threat detected while user is away",
+    "score": 25,
+    "escalation": "NONE",
+    "flags": [
+      "user_away",
+      "behavior:loitering(20s)"
+    ]
+  },
+  {
+    "frame": 8,
+    "description": "Weapon aimed directly at camera",
+    "score": 100,
+    "escalation": "EMERGENCY",
+    "flags": [
+      "AIMING_AT_CAMERA"
+    ]
+  }
+]

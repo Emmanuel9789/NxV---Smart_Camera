@@ -1,0 +1,14 @@
+{
+  "person_id": 23,
+  "searched_at": "2026-04-30T12:46:16.068326",
+  "name_guess": null,
+  "entities": [],
+  "pages_found": [],
+  "labels": [
+    "electric blue"
+  ],
+  "danger_keywords_found": [],
+  "suggested_threat_boost": 0,
+  "has_web_presence": false,
+  "demo_mode": false
+}

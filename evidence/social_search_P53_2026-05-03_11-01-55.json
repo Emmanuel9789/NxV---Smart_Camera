@@ -1,0 +1,14 @@
+{
+  "person_id": 53,
+  "searched_at": "2026-05-03T11:01:55.420133",
+  "name_guess": null,
+  "entities": [],
+  "pages_found": [],
+  "labels": [
+    "close-up"
+  ],
+  "danger_keywords_found": [],
+  "suggested_threat_boost": 0,
+  "has_web_presence": false,
+  "demo_mode": false
+}

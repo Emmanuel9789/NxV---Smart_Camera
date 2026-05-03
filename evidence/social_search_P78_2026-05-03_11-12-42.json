@@ -1,0 +1,14 @@
+{
+  "person_id": 78,
+  "searched_at": "2026-05-03T11:12:42.827484",
+  "name_guess": null,
+  "entities": [],
+  "pages_found": [],
+  "labels": [
+    "darkness"
+  ],
+  "danger_keywords_found": [],
+  "suggested_threat_boost": 0,
+  "has_web_presence": false,
+  "demo_mode": false
+}

@@ -1,11 +1,4 @@
 """
-NxV - Threat Score Engine (v2.1)
-scoring/threat_score.py
-
-Added: user presence modifier
-  - user_away=True  → escalation bumped up one level, score floor raised
-  - user_away=False → normal scoring
-
 Hard rules (bypass weighted scoring):
   - Weapon aimed at camera       → EMERGENCY immediately
   - Break-in attempt at night    → EMERGENCY immediately

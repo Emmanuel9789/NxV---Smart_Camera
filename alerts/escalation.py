@@ -15,6 +15,8 @@ Escalation flow:
 import time
 from alerts.notifier  import Notifier
 from alerts.deterrent import Deterrent
+from alerts.call_chain import CallChain
+
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -37,6 +39,7 @@ class EscalationEngine:
     def __init__(self):
         self.notifier   = Notifier()
         self.deterrent  = Deterrent()
+        self.call_chain = CallChain()
 
         # Track escalation state
         self._active_alerts     = {}   # person_id → { score, time, escalation }
@@ -44,24 +47,21 @@ class EscalationEngine:
         self._contact_notified  = set()  # person_ids already sent to contact
 
     def handle(self, threat_score, user_away: bool = False) -> dict:
-        """
-        Main entry point. Pass in a ThreatScore and user_away flag.
-        Returns a dict describing what actions were taken.
-        """
         pid        = threat_score.person_id
         score      = threat_score.final_score
         escalation = threat_score.escalation
         flags      = threat_score.all_flags
 
         actions = {
-            "person_id"       : pid,
-            "score"           : score,
-            "escalation"      : escalation,
-            "sms_owner"       : False,
-            "sms_contact"     : False,
-            "police_prompt"   : False,
-            "deterrent"       : False,
-            "social_search"   : threat_score.trigger_social_search,
+            "person_id"    : pid,
+            "score"        : score,
+            "escalation"   : escalation,
+            "sms_owner"    : False,
+            "sms_contact"  : False,
+            "police_prompt": False,
+            "deterrent"    : False,
+            "call_chain"   : False,
+            "social_search": threat_score.trigger_social_search,
         }
 
         if escalation == "NONE":
@@ -98,13 +98,22 @@ class EscalationEngine:
             elif not user_away:
                 self._check_owner_timeout(pid, score, escalation, flags, actions)
 
-        # ── EMERGENCY — all channels immediately ──────────────────────────────
+             # ── EMERGENCY — all channels immediately ──────────────────
         elif escalation == "EMERGENCY":
-            # Owner
+            # SMS owner
             sent_o = self.notifier.notify_owner(score, escalation, flags)
             actions["sms_owner"] = sent_o
 
-            # Contact — immediately, no waiting
+            # Start call chain in background
+            if not self.call_chain.is_active:
+                self.call_chain.start(
+                    threat_score = score,
+                    flags        = flags,
+                    clip_path    = None,
+                )
+            actions["call_chain"] = True
+
+            # SMS trusted contact immediately
             if pid not in self._contact_notified:
                 sent_c = self.notifier.notify_contact(
                     score, escalation, flags, owner_name=OWNER_NAME
@@ -113,18 +122,15 @@ class EscalationEngine:
                 if sent_c:
                     self._contact_notified.add(pid)
 
-            # Police prompt
+            # Police prompt SMS
             sent_p = self.notifier.notify_police_prompt(
                 score, flags, address=HOME_ADDRESS
             )
             actions["police_prompt"] = sent_p
 
-            # Max deterrent
+            # Deterrent
             self.deterrent.trigger(escalation)
             actions["deterrent"] = True
-
-        self._log(actions)
-        return actions
 
     def _check_owner_timeout(self, pid, score, escalation, flags, actions):
         """

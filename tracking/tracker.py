@@ -18,6 +18,7 @@ from datetime import datetime
 
 
 class Person:
+    
     """
     Represents a single tracked individual across frames.
     """

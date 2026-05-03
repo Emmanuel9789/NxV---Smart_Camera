@@ -1,0 +1,11 @@
+{
+  "name": "NxV Security",
+  "short_name": "NxV",
+  "description": "AI-Powered Intent-Aware Security System",
+  "start_url": "/app",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait",
+  "icons": []
+}
