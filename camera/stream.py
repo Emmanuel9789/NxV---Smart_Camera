@@ -13,12 +13,28 @@ Full pipeline per frame:
   10. Draw all overlays onto frame
   11. Stream to browser via Flask MJPEG
 """
-
+import threading
 import cv2
 from flask import Flask, Response
 from flask import send_file, request, jsonify
 import json, os, glob, time, uuid
 from datetime import datetime
+from utils.clip_recorder import ClipRecorder
+from ai.delivery import DeliveryDetector
+from ai.neighborhood import NeighborhoodNetwork
+from alerts.notification_tiers import NotificationManager, NotificationEvent
+from ai.safe_zone import SafeZoneManager
+from ai.predictive import PredictiveModel
+predictive_model = PredictiveModel()
+from utils.db import (
+    init_db, get_all_persons, add_person, delete_person,
+    get_clips, get_clip, save_clip, get_contacts, add_contact,
+    remove_contact, save_contacts, get_alerts, save_alert,
+    log_motion, get_motion_log, get_all_settings, set_settings,
+    get_setting, set_setting, update_person_sighting,
+    delete_expired_clips
+)
+init_db()
 
 
 _fps_current         = 0.0
@@ -48,7 +64,10 @@ from alerts.escalation    import EscalationEngine
 app = Flask(__name__)
 
 
-import threading
+_latest_frame = None
+_pipeline_lock = threading.Lock()
+
+
 
 _weapon_detections_async = []
 _weapon_lock = threading.Lock()
@@ -68,6 +87,12 @@ behavior_analyzer = BehaviorAnalyzer()
 violence_detector = ViolenceDetector()
 threat_engine     = ThreatScoreEngine()
 escalation_engine = EscalationEngine()
+clip_recorder = ClipRecorder()
+safe_zone = SafeZoneManager()
+delivery_detector    = DeliveryDetector()
+neighborhood_network = NeighborhoodNetwork()
+notification_manager = NotificationManager()
+neighborhood_network.start()
 
 # ── Config ────────────────────────────────────────────────────────────────────
 # Door zone (x, y, w, h) in pixels — adjust to where your door appears
@@ -101,6 +126,16 @@ def generate_frames():
 
         # 1 ── Grab frame ──────────────────────────────────────────────────────
         frame = app.camera.get_frame()
+        
+        if _capture_session['active']:
+         if len(_capture_session['frames']) < _capture_session['target']:
+             _capture_session['frames'].append(frame.copy())
+             print(f"[NxV SafeZone] Frame {len(_capture_session['frames'])}"
+                   f"/{_capture_session['target']}")
+         else:
+             _capture_session['active'] = False
+             print("[NxV SafeZone] Capture complete — call /register_face/complete")
+
 
         # 2 ── Motion detection ────────────────────────────────────────────────
         motion_detected, motion_boxes = app.motion_detector.detect(frame)
@@ -162,8 +197,66 @@ def generate_frames():
                 'score' : top_ts.final_score if top_ts else 0,
                 'ts'   : time.time(),
             })
+            
+            log_motion(
+                description   = _flags_to_desc(top_ts.all_flags) if top_ts and top_ts.all_flags else 'Motion detected',
+                persons_count = len(persons),
+                score         = top_ts.final_score if top_ts else 0,
+                escalation    = top_ts.escalation if top_ts else 'NONE',
+                is_threat     = top_ts.escalation != 'NONE' if top_ts else False,
+)
+            
             if len(_motion_history) > 500:
                 _motion_history.pop()
+                
+                
+        is_flagged = any('face:known' in f for f in
+                 (threat_scores[0].all_flags if threat_scores else []))
+        current_esc = threat_scores[0].escalation if threat_scores else 'NONE'
+    
+        
+        clip_recorder.on_frame(
+            frame, motion=motion_detected,
+            escalation=current_esc, flagged=is_flagged,)
+        
+
+        if threat_scores and threat_scores[0].escalation == 'EMERGENCY':
+            clip_recorder.force_save('EMERGENCY', is_flagged)
+            
+            
+        # ── Predictive model — log event ──────────────────────────────────────
+        if persons and motion_detected:
+            top_ts = _last_threat_scores[0] if _last_threat_scores else None
+            predictive_model.log_event(
+                hour       = datetime.now().hour,
+                duration   = persons[0].dwell_time if persons else 0,
+                had_person = True,
+                score      = top_ts.final_score if top_ts else 0,
+                escalation = top_ts.escalation  if top_ts else 'NONE',
+            )
+
+            # Get predictive boost and apply to threat score
+            is_new_face = not any(
+                fr.get('match') for fr in face_results
+            ) if face_results else False
+
+            p_boost, p_reason = predictive_model.get_score_boost(
+                hour          = datetime.now().hour,
+                current_dwell = persons[0].dwell_time if persons else 0,
+                is_new_face   = is_new_face,
+            )
+
+            if p_boost > 0 and _last_threat_scores:
+                _last_threat_scores[0].final_score = min(
+                    100,
+                    _last_threat_scores[0].final_score + p_boost
+                )
+                if p_reason:
+                    _last_threat_scores[0].all_flags.append(
+                        f"predict:{p_reason}"
+                    )
+                print(f"[NxV Predict] Boost +{p_boost} → {p_reason}")    
+        
 
         # 9 ── Escalation (rate limited) ───────────────────────────────────────
         now = time.time()
@@ -173,7 +266,69 @@ def generate_frames():
             if top.escalation != "NONE":
                 escalation_engine.handle(top, user_away=_user_away)
                 _last_escalation = now
+                
+                save_alert(
+                    escalation = top.escalation,
+                    score      = top.final_score,
+                    flags      = top.all_flags,
+                )
+        
+        # ── Delivery detection ────────────────────────────────────────
+        delivery_result = delivery_detector.analyze(frame, persons, motion_boxes)
+        if delivery_result.is_delivery and motion_detected:
+            print(f"[NxV Delivery] {delivery_result.notification_label}")
 
+        # ── Neighborhood network face check ──────────────────────────
+        if face_results and neighborhood_network.is_enabled:
+            for fr in face_results:
+                enc = fr.get('encoding')
+                if enc is not None:
+                    b_score = 0
+                    if persons and behavior_results:
+                        b_result = behavior_results.get(persons[0].id)
+                        b_score  = b_result.score if b_result else 0
+
+                    net_result = neighborhood_network.check_face(
+                        enc,
+                        behavior_score = b_score,
+                        has_weapon     = len(weapon_detections) > 0,
+                        is_at_door     = any('near_door' in f
+                                            for f in (threat_scores[0].all_flags
+                                            if threat_scores else [])),
+                    )
+                    if net_result:
+                        print(f"[NxV Network] {net_result['layer']}: "
+                            f"{net_result['name']} "
+                            f"(boost: {net_result['score_boost']})")
+                        # Apply score boost
+                        if threat_scores:
+                            threat_scores[0].final_score = min(100,
+                                threat_scores[0].final_score + net_result['score_boost'])
+                            threat_scores[0].all_flags.append(
+                                f"network:{net_result['name']}"
+                            )
+                            if net_result['should_escalate']:
+                                threat_scores[0].escalation = net_result['min_escalation']
+
+        # ── Share to network on EMERGENCY ────────────────────────────
+        if threat_scores and neighborhood_network.is_enabled:
+            top = threat_scores[0]
+            if top.escalation == 'EMERGENCY':
+                for fr in face_results:
+                    enc = fr.get('encoding')
+                    if enc is not None and not fr.get('match'):
+                        from ai.neighborhood import NetworkThreatRecord
+                        record = NetworkThreatRecord(
+                            person_id      = f"p{top.person_id}_{int(time.time())}",
+                            name           = "Unknown threat",
+                            crime_severity = "SEVERE",
+                            reason         = ", ".join(top.all_flags[:3]),
+                            threat_score   = top.final_score,
+                            embedding      = enc,
+                            camera_id      = os.environ.get("NXV_CAMERA_ID","unknown"),
+                        )
+                        neighborhood_network.share_threat(record)
+        
         # ── Social media search (unknown faces at medium+ threat) ─────────────────
         for ts in threat_scores:
             if ts.trigger_social_search:
@@ -267,6 +422,11 @@ def generate_frames():
             cv2.putText(frame, line, (4, 13 + i * 15),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.36, c, 1, cv2.LINE_AA)
 
+        
+        
+        # Fix colors — convert BGR to RGB for correct color display
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
         # 11 ── Encode and stream ──────────────────────────────────────────────
         _, buffer = cv2.imencode('.jpg', frame,
                                  [cv2.IMWRITE_JPEG_QUALITY, 60])
@@ -274,106 +434,179 @@ def generate_frames():
                b'Content-Type: image/jpeg\r\n\r\n'
                + buffer.tobytes() + b'\r\n')
 
+def run_pipeline():
+    """Background thread — runs detection pipeline constantly."""
+    global _latest_frame
+    for frame in generate_frames():
+        with _pipeline_lock:
+            _latest_frame = frame
+            
+def start_pipeline():
+    t = threading.Thread(target=run_pipeline, daemon=True)
+    t.start()
+    print("[NxV] Detection pipeline running in background")
+
 
 # ── Flask routes ──────────────────────────────────────────────────────────────
 
-@app.route('/')
-def index():
-    status = "AWAY" if _user_away else "HOME"
-    return f'''<html><body style="background:#111;color:#eee;
-    font-family:monospace;padding:20px">
-    <h2>NxV — {status}</h2>
-    <img src="/video_feed" width="640"
-         style="border:2px solid #333;display:block;margin-bottom:16px"/>
-    <a href="/set_away/1"
-       style="color:#f90;margin-right:20px;font-size:16px">Set AWAY</a>
-    <a href="/set_away/0"
-       style="color:#0f9;font-size:16px">Set HOME</a>
-    </body></html>'''
+"""
+NxV - DB-backed routes for stream.py
+Replace existing routes in stream.py with these versions.
 
-@app.route('/video_feed')
-def video_feed():
-    return Response(generate_frames(),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
-
-@app.route('/set_away/<int:flag>')
-def set_away(flag):
-    global _user_away
-    _user_away = bool(flag)
-    print(f"[NxV] User set to: {'AWAY' if _user_away else 'HOME'}")
-    return f"{'AWAY' if _user_away else 'HOME'}", 200
-
-@app.route('/acknowledge/<int:person_id>')
-def acknowledge(person_id):
-    escalation_engine.acknowledge(person_id)
-    return f"Acknowledged P{person_id}", 200
-
-@app.route('/gps')
-def gps_update():
-    """
-    Phone calls this URL with its GPS coordinates.
-
-    URL format:
-      http://<PI_IP>:5000/gps?lat=39.2034&lon=-76.8621
-
-    iPhone Shortcut:
-      Action: Get Contents of URL
-      URL: http://<PI_IP>:5000/gps?lat=[Latitude]&lon=[Longitude]
-      Run every 30 minutes or on location change
-
-    Android (MacroDroid or Tasker):
-      Trigger: Location change
-      Action: HTTP GET http://<PI_IP>:5000/gps?lat=%loc_lat&lon=%loc_long
-    """
-    from flask import request
-    global _user_away
-
-    try:
-        lat = float(request.args.get('lat', 0))
-        lon = float(request.args.get('lon', 0))
-    except (TypeError, ValueError):
-        return {"error": "Invalid lat/lon"}, 400
-
-    result = _gps_tracker.update(lat, lon)
-
-    # Auto-update user_away based on GPS distance
-    _user_away = result['user_away']
-
-    return result, 200
-
-
-@app.route('/gps/status')
-def gps_status():
-    """Returns current GPS state."""
-    stale = _gps_tracker.is_stale()
-    return {
-        "last_lat"    : _gps_tracker.last_lat,
-        "last_lon"    : _gps_tracker.last_lon,
-        "distance_km" : _gps_tracker.distance_km,
-        "user_away"   : _gps_tracker.user_away,
-        "zone"        : _gps_tracker.distance_zone,
-        "stale"       : stale,
-        "updated_at"  : (_gps_tracker.last_update.strftime("%H:%M:%S")
-                         if _gps_tracker.last_update else "never"),
-    }, 200
+Add at top of stream.py:
+    from utils.db import (
+        init_db, get_all_persons, add_person, delete_person,
+        get_clips, get_clip, save_clip, get_contacts, add_contact,
+        remove_contact, save_contacts, get_alerts, save_alert,
+        log_motion, get_motion_log, get_all_settings, set_settings,
+        get_setting, set_setting, update_person_sighting,
+        delete_expired_clips
+    )
+    init_db()   # initialize DB on startup
+"""
 
 
 
-@app.route('/app')
-def pwa_app():
-    return send_file('/home/emmanuel/camera_project/camera/app.html')
 
-@app.route('/manifest.json')
-def manifest():
-    return send_file('/home/emmanuel/camera_project/camera/manifest.json',
-                     mimetype='application/json')
+# ── Safe zone (trusted persons) ───────────────────────────────────────────────
+
+@app.route('/trusted', methods=['GET', 'POST', 'DELETE'])
+def trusted_persons():
+    if request.method == 'GET':
+        return jsonify(get_all_persons(trusted_only=True))
+
+    if request.method == 'POST':
+        data   = request.get_json(silent=True) or {}
+        name   = data.get('name', '').strip()
+        reason = data.get('reason', 'Trusted person')
+        if not name:
+            return 'Name required', 400
+        import uuid
+        pid    = str(uuid.uuid4())[:8]
+        person = add_person(pid, name, 0, reason, is_trusted=True)
+        return jsonify(person), 201
+
+    if request.method == 'DELETE':
+        pid = request.args.get('id')
+        if not pid:
+            return 'ID required', 400
+        delete_person(pid)
+        return jsonify({'status': 'deleted'})
+
+
+# ── Contacts ──────────────────────────────────────────────────────────────────
+
+@app.route('/contacts', methods=['GET', 'POST'])
+def contacts_route():
+    if request.method == 'GET':
+        return jsonify(get_contacts())
+
+    data = request.get_json(silent=True) or {}
+
+    # Full replace
+    if 'contacts' in data:
+        save_contacts(data['contacts'])
+        return jsonify({'status': 'saved'})
+
+    # Add single contact
+    name         = data.get('name', '').strip()
+    phone        = data.get('phone', '').strip()
+    country_code = data.get('country_code', '+1')
+    if not name or not phone:
+        return 'Name and phone required', 400
+    contact = add_contact(name, phone, 'contact', country_code)
+    return jsonify(contact), 201
+
+
+@app.route('/contacts/<int:contact_id>', methods=['DELETE'])
+def delete_contact_route(contact_id):
+    existing = get_contacts()
+    active   = [c for c in existing if c['role'] == 'contact']
+    if len(active) <= 1:
+        return 'At least 1 contact required', 400
+    remove_contact(contact_id)
+    return jsonify({'status': 'deleted'})
+
+
+# ── Clips ─────────────────────────────────────────────────────────────────────
+
+@app.route('/clips')
+def clips_list():
+    f     = request.args.get('filter', 'all')
+    clips = get_clips(filter_type=f, limit=100)
+    return jsonify(clips)
+
+@app.route('/clip/<clip_id>')
+def serve_clip(clip_id):
+    safe_id = os.path.basename(clip_id).replace('..', '')
+    path = clip_recorder.get_clip_path(safe_id)
+    if not path:
+        return 'Clip not found', 404
+    mimetype = 'video/x-msvideo' if path.endswith('.avi') else 'video/mp4'
+    return send_file(path, mimetype=mimetype)
+
+@app.route('/clips/storage')
+def clips_storage():
+    clips    = get_clips(limit=10000)
+    total    = sum(
+        os.path.getsize(c['path'])
+        for c in clips if os.path.exists(c.get('path',''))
+    )
+    kept     = sum(1 for c in clips if c.get('keep_forever'))
+    return jsonify({
+        'total_mb'       : round(total / 1024 / 1024, 1),
+        'clip_count'     : len(clips),
+        'kept_forever'   : kept,
+        'auto_delete_days': int(get_setting('auto_delete_days', 7)),
+    })
+
+
+# ── Alerts ────────────────────────────────────────────────────────────────────
+
+@app.route('/alerts_history')
+def alerts_history():
+    esc    = request.args.get('escalation')
+    limit  = int(request.args.get('limit', 100))
+    alerts = get_alerts(limit=limit, escalation=esc)
+    return jsonify(alerts)
+
+
+# ── Motion log ────────────────────────────────────────────────────────────────
+
+@app.route('/motion_history')
+def motion_history_route():
+    threats_only = request.args.get('threats') == '1'
+    rows         = get_motion_log(limit=200, threats_only=threats_only)
+    return jsonify(rows)
+
+
+# ── Settings ──────────────────────────────────────────────────────────────────
+
+@app.route('/settings', methods=['GET', 'POST'])
+def settings_route():
+    if request.method == 'GET':
+        s = get_all_settings()
+        # Convert string booleans to real booleans for JS
+        return jsonify({
+            k: (v == 'true' if v in ('true','false') else v)
+            for k, v in s.items()
+        })
+
+    data = request.get_json(silent=True) or {}
+    set_settings({k: str(v) for k, v in data.items()})
+    return jsonify({'status': 'saved'})
+
+
+# ── Status (enhanced with DB) ─────────────────────────────────────────────────
 
 @app.route('/status')
 def status():
-    top = _last_threat_scores[0] if _last_threat_scores else None
-    now = time.time()
+    top  = _last_threat_scores[0] if _last_threat_scores else None
+    now  = time.time()
     recent = [t for t in _frame_times if now - t < 2.0]
-    fps = round(len(recent) / 2.0, 1) if len(recent) > 1 else 0.0
+    fps  = round(len(recent) / 2.0, 1) if len(recent) > 1 else 0.0
+    s    = get_all_settings()
+
     return jsonify({
         "user_away"    : _user_away,
         "persons"      : person_tracker.active_count(),
@@ -381,56 +614,16 @@ def status():
         "escalation"   : top.escalation  if top else "NONE",
         "flags"        : top.all_flags   if top else [],
         "fps"          : fps,
-        "settings"     : _system_settings,
-        "motion_count" : len(_motion_history),
+        "settings"     : {
+            k: (v == 'true' if v in ('true','false') else v)
+            for k, v in s.items()
+        },
+        "clip_count"   : len(get_clips(limit=10000)),
+        "alert_count"  : len(get_alerts(limit=10000)),
     })
 
-@app.route('/snapshot')
-def snapshot():
-    try:
-        frame    = app.camera.get_frame()
-        ts       = datetime.now().strftime("%Y%m%d_%H%M%S")
-        snap_dir = '/home/emmanuel/camera_project/evidence/snapshots'
-        os.makedirs(snap_dir, exist_ok=True)
-        path     = f'{snap_dir}/snapshot_{ts}.jpg'
-        import cv2
-        cv2.imwrite(path, frame)
-        return send_file(path, mimetype='image/jpeg',
-                         as_attachment=True,
-                         download_name=f'nxv_snapshot_{ts}.jpg')
-    except Exception as e:
-        return str(e), 500
 
-@app.route('/evidence_list')
-def evidence_list():
-    evidence_dir = '/home/emmanuel/camera_project/evidence'
-    incidents    = []
-    if not os.path.exists(evidence_dir):
-        return jsonify([])
-    folders = sorted(glob.glob(f'{evidence_dir}/*_incident'), reverse=True)
-    for folder in folders[:30]:
-        log_path = os.path.join(folder, 'threat_log.json')
-        if not os.path.exists(log_path):
-            continue
-        try:
-            with open(log_path) as f:
-                log = json.load(f)
-            incidents.append({
-                'id'         : os.path.basename(folder),
-                'time'       : log.get('incident_time','')[:16].replace('T',' '),
-                'duration'   : log.get('duration_secs', 0),
-                'escalation' : log.get('threat',{}).get('escalation','NONE'),
-                'score'      : log.get('threat',{}).get('final_score', 0),
-                'description': _flags_to_desc(log.get('threat',{}).get('flags',[])),
-                'flags'      : log.get('threat',{}).get('flags',[]),
-            })
-        except Exception:
-            continue
-    return jsonify(incidents)
-
-@app.route('/motion_history')
-def motion_history_route():
-    return jsonify(_motion_history[-200:])
+# ── Evidence report ───────────────────────────────────────────────────────────
 
 @app.route('/evidence_report/<incident_id>')
 def evidence_report(incident_id):
@@ -442,113 +635,34 @@ def evidence_report(incident_id):
         return f'<pre style="font-family:monospace;padding:20px;white-space:pre-wrap;background:#0a0a0a;color:#f0f0f0;min-height:100vh;margin:0">{content}</pre>'
     return 'Report not found', 404
 
-@app.route('/settings', methods=['GET', 'POST'])
-def settings_route():
-    global _system_settings
-    if request.method == 'POST':
-        data = request.get_json(silent=True) or {}
-        _system_settings.update({
-            k: v for k, v in data.items()
-            if k in _system_settings
-        })
-        return jsonify(_system_settings)
-    return jsonify(_system_settings)
 
-@app.route('/contacts', methods=['GET', 'POST'])
-def contacts_route():
-    env_path = '/home/emmanuel/camera_project/.env'
-    if request.method == 'GET':
-        return jsonify({
-            'owner'    : os.environ.get('NXV_OWNER_PHONE',    ''),
-            'contact_1': os.environ.get('NXV_CONTACT_1_PHONE',''),
-            'contact_2': os.environ.get('NXV_CONTACT_2_PHONE',''),
-            'contact_3': os.environ.get('NXV_CONTACT_3_PHONE',''),
-        })
-    data = request.get_json(silent=True) or {}
-    mapping = {
-        'contact_1': 'NXV_CONTACT_1_PHONE',
-        'contact_2': 'NXV_CONTACT_2_PHONE',
-        'contact_3': 'NXV_CONTACT_3_PHONE',
-    }
-    for key, env_var in mapping.items():
-        if key in data and data[key]:
-            os.environ[env_var] = data[key]
-    try:
-        if os.path.exists(env_path):
-            with open(env_path, 'r') as f:
-                lines = f.readlines()
-            updated = {v: False for v in mapping.values()}
-            new_lines = []
-            for line in lines:
-                replaced = False
-                for key, env_var in mapping.items():
-                    if line.startswith(f'export {env_var}='):
-                        if key in data and data[key]:
-                            new_lines.append(f'export {env_var}="{data[key]}"\n')
-                            updated[env_var] = True
-                            replaced = True
-                            break
-                if not replaced:
-                    new_lines.append(line)
-            for key, env_var in mapping.items():
-                if not updated[env_var] and key in data and data[key]:
-                    new_lines.append(f'export {env_var}="{data[key]}"\n')
-            with open(env_path, 'w') as f:
-                f.writelines(new_lines)
-    except Exception as e:
-        print(f"[NxV] Could not persist contacts: {e}")
-    return jsonify({'status': 'saved'})
+# ── Snapshot ──────────────────────────────────────────────────────────────────
 
-@app.route('/contact_status')
-def contact_status():
-    return jsonify(_last_alert_contacts)
+def snapshot_feed():
+    global _latest_frame
+    with _pipeline_lock:
+        frame = _latest_frame
+    if frame is None:
+        return 'No frame yet', 503
+    # frame is already JPEG bytes from generate_frames
+    return Response(
+        frame.split(b'\r\n\r\n')[1].split(b'\r\n')[0],
+        mimetype='image/jpeg',
+        headers={'Cache-Control': 'no-cache, no-store'}
+    )
 
-@app.route('/flagged', methods=['GET', 'POST', 'DELETE'])
-def flagged_persons():
-    db_path = '/home/emmanuel/camera_project/datasets/flagged_persons.json'
-    if request.method == 'GET':
-        if os.path.exists(db_path):
-            with open(db_path) as f:
-                return jsonify(json.load(f).get('persons', []))
-        return jsonify([])
-    if request.method == 'POST':
-        data  = request.get_json(silent=True) or {}
-        name  = data.get('name','')
-        score = int(data.get('threat_score', 50))
-        reason= data.get('reason','')
-        if not name:
-            return 'Name required', 400
-        db = {'version':'1.0','persons':[]}
-        if os.path.exists(db_path):
-            with open(db_path) as f:
-                db = json.load(f)
-        record = {
-            'id'          : str(uuid.uuid4())[:8],
-            'name'        : name,
-            'threat_score': score,
-            'reason'      : reason,
-            'added'       : datetime.now().isoformat(),
-            'sightings'   : 0,
-            'last_seen'   : None,
-        }
-        db['persons'].append(record)
-        with open(db_path,'w') as f:
-            json.dump(db, f, indent=2)
-        if hasattr(face_detector,'reload_db'):
-            face_detector.reload_db()
-        return jsonify(record), 201
-    if request.method == 'DELETE':
-        pid = request.args.get('id')
-        if not pid or not os.path.exists(db_path):
-            return 'Not found', 404
-        with open(db_path) as f:
-            db = json.load(f)
-        db['persons'] = [p for p in db['persons'] if p['id'] != pid]
-        with open(db_path,'w') as f:
-            json.dump(db, f, indent=2)
-        if hasattr(face_detector,'reload_db'):
-            face_detector.reload_db()
-        return jsonify({'status':'deleted'})
+
+# ── PWA ───────────────────────────────────────────────────────────────────────
+
+@app.route('/app')
+def pwa_app():
+    return send_file('/home/emmanuel/camera_project/camera/app.html')
+
+@app.route('/manifest.json')
+def manifest():
+    return send_file('/home/emmanuel/camera_project/camera/manifest.json',
+                     mimetype='application/json')
+
 
 def _flags_to_desc(flags):
     for f in flags:
@@ -561,3 +675,238 @@ def _flags_to_desc(flags):
         if 'face:masked'       in f: return 'Masked person'
         if 'behavior:loitering'in f: return 'Loitering detected'
     return 'Suspicious activity'
+
+"""
+NxV - Safe Zone Routes
+Add to camera/stream.py
+
+STEP 1 — Add import at top of stream.py:
+    from ai.safe_zone import SafeZoneManager
+    safe_zone = SafeZoneManager()
+
+STEP 2 — Paste these routes at bottom of stream.py
+"""
+
+import base64
+import uuid
+import numpy as np
+
+
+# ── Registration state (captures frames while user looks at camera) ────────────
+_capture_session = {
+    'active'    : False,
+    'person_id' : None,
+    'name'      : None,
+    'frames'    : [],
+    'started_at': None,
+    'target'    : 15,    # number of frames to capture
+}
+
+
+@app.route('/register_face/start', methods=['POST'])
+def register_face_start():
+    """
+    Step 1 — App tells Pi to start capturing frames.
+    The live stream continues normally while frames are collected.
+    """
+    global _capture_session
+    data = request.get_json(silent=True) or {}
+    name = data.get('name', '').strip()
+
+    if not name:
+        return jsonify({'error': 'Name required'}), 400
+
+    if _capture_session['active']:
+        return jsonify({'error': 'Registration already in progress'}), 409
+
+    person_id = str(uuid.uuid4())[:8]
+
+    _capture_session = {
+        'active'    : True,
+        'person_id' : person_id,
+        'name'      : name,
+        'frames'    : [],
+        'started_at': time.time(),
+        'target'    : 15,
+    }
+
+    print(f"[NxV SafeZone] Starting capture for: {name} (ID: {person_id})")
+    return jsonify({
+        'status'   : 'capturing',
+        'person_id': person_id,
+        'message'  : f'Look at the camera. Capturing {_capture_session["target"]} frames...',
+        'target'   : _capture_session['target'],
+    })
+
+
+@app.route('/register_face/status')
+def register_face_status():
+    """App polls this to see how many frames captured."""
+    session = _capture_session
+    if not session['active'] and not session['frames']:
+        return jsonify({'status': 'idle', 'frames': 0, 'target': 15})
+    return jsonify({
+        'status'   : 'capturing' if session['active'] else 'ready',
+        'frames'   : len(session['frames']),
+        'target'   : session['target'],
+        'name'     : session['name'],
+        'person_id': session['person_id'],
+        'progress' : min(100, int(len(session['frames']) / session['target'] * 100)),
+    })
+
+
+@app.route('/register_face/complete', methods=['POST'])
+def register_face_complete():
+    """
+    Step 2 — App tells Pi to process the captured frames.
+    Pi computes embedding and saves to DB.
+    """
+    global _capture_session
+
+    if not _capture_session['frames']:
+        return jsonify({'error': 'No frames captured yet'}), 400
+
+    frames    = list(_capture_session['frames'])
+    name      = _capture_session['name']
+    person_id = _capture_session['person_id']
+
+    # Reset session
+    _capture_session = {
+        'active': False, 'person_id': None,
+        'name': None, 'frames': [], 'started_at': None, 'target': 15,
+    }
+
+    # Process frames
+    result = safe_zone.register_from_frames(frames, person_id, name)
+
+    if result['success']:
+        # Save to DB as trusted person
+        add_person(
+            id           = person_id,
+            name         = name,
+            threat_score = 0,
+            reason       = 'Trusted — registered via NxV app',
+            is_trusted   = True,
+        )
+        # Reload face detector
+        if hasattr(face_detector, 'reload_db'):
+            face_detector.reload_db()
+        safe_zone.reload()
+        print(f"[NxV SafeZone] ✓ {name} registered and active")
+
+    return jsonify(result)
+
+
+@app.route('/register_face/cancel', methods=['POST'])
+def register_face_cancel():
+    """Cancel an in-progress registration."""
+    global _capture_session
+    _capture_session = {
+        'active': False, 'person_id': None,
+        'name': None, 'frames': [], 'started_at': None, 'target': 15,
+    }
+    return jsonify({'status': 'cancelled'})
+
+
+@app.route('/trusted', methods=['GET'])
+def trusted_list():
+    """Return all registered trusted faces."""
+    return jsonify(safe_zone.get_trusted_list())
+
+
+@app.route('/trusted/<person_id>', methods=['DELETE'])
+def remove_trusted(person_id):
+    """Remove a trusted person."""
+    safe_zone.remove_trusted(person_id)
+    delete_person(person_id)
+    return jsonify({'status': 'removed'})
+@app.route('/network/status')
+def network_status():
+    return jsonify({
+        "enabled"    : neighborhood_network.is_enabled,
+        "camera_id"  : os.environ.get("NXV_CAMERA_ID","not-set"),
+        "threats"    : neighborhood_network.threat_count,
+        "trusted"    : neighborhood_network.trusted_count,
+        "network_db" : neighborhood_network.get_all_threats(),
+    })
+
+@app.route('/notifications/settings', methods=['GET','POST'])
+def notification_settings():
+    if request.method == 'GET':
+        return jsonify(notification_manager.get_settings())
+    data = request.get_json(silent=True) or {}
+    notification_manager.update_settings(data)
+    return jsonify(notification_manager.get_settings())
+
+@app.route('/snapshot_feed')
+def snapshot_feed():
+    """Single frame for mobile app feed polling."""
+    try:
+        frame = app.camera.get_frame()
+        import cv2
+        _, buffer = cv2.imencode('.jpg', frame,
+                                 [cv2.IMWRITE_JPEG_QUALITY, 60])
+        from flask import Response
+        return Response(buffer.tobytes(),
+                       mimetype='image/jpeg',
+                       headers={'Cache-Control': 'no-cache, no-store'})
+    except Exception as e:
+        return str(e), 500
+    
+@app.route('/video_feed')
+def video_feed():
+    def stream():
+        while True:
+            with _pipeline_lock:
+                frame = _latest_frame
+            if frame:
+                yield frame
+            time.sleep(0.05)
+    return Response(stream(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+    
+    
+@app.route('/')
+def index():
+    return send_file('/home/emmanuel/camera_project/camera/app.html')
+
+
+@app.route('/predict/status')
+def predict_status():
+    """Return predictive model baseline summary."""
+    return jsonify(predictive_model.get_baseline_summary())
+
+@app.route('/predict/reset', methods=['POST'])
+def predict_reset():
+    """Reset predictive baseline — start learning fresh."""
+    predictive_model.reset()
+    return jsonify({'status': 'reset'})
+
+@app.route('/predict/baseline')
+def predict_baseline():
+    """Return full hourly baseline for visualization."""
+    if not predictive_model._has_enough_data():
+        return jsonify({
+            'ready'  : False,
+            'message': predictive_model.get_baseline_summary()['message']
+        })
+
+    baseline = []
+    for hour in range(24):
+        stats = predictive_model._baseline.get(hour, {})
+        baseline.append({
+            'hour'             : hour,
+            'label'            : f"{hour:02d}:00",
+            'avg_events_per_day': round(stats.get('avg_events_per_day', 0), 2),
+            'avg_duration'     : round(stats.get('avg_duration', 0), 1),
+            'avg_score'        : round(stats.get('avg_score', 0), 1),
+            'event_count'      : stats.get('event_count', 0),
+            'is_quiet'         : stats.get('avg_events_per_day', 0) < 0.2,
+            'is_busy'          : stats.get('avg_events_per_day', 0) > 1.0,
+        })
+
+    return jsonify({
+        'ready'   : True,
+        'baseline': baseline,
+        'summary' : predictive_model.get_baseline_summary(),
+    })

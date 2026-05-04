@@ -141,6 +141,7 @@ body{
 .srow-label{font-size:13px;font-weight:500}
 .srow-sub{font-size:11px;color:var(--muted);margin-top:1px}
 
+
 /* GPS status chip in settings */
 .gps-status{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:0.5px solid var(--border)}
 .gps-big{font-size:13px;font-weight:500;flex:1}
@@ -221,6 +222,47 @@ body{
 @media(min-width:600px){body{max-width:480px;margin:0 auto;border-left:0.5px solid var(--border);border-right:0.5px solid var(--border)}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .screen.active{animation:fadeIn .18s ease}
+.capture-ring {
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  margin: 20px auto;
+  position: relative;
+  overflow: hidden;
+}
+.capture-progress {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  border: 3px solid var(--green);
+  clip-path: inset(0 50% 0 0);
+  transition: clip-path .3s;
+}
+.capture-icon {
+  font-size: 48px;
+  z-index: 1;
+}
+.capture-status {
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 16px;
+  min-height: 40px;
+}
+.capture-bar-bg {
+  height: 4px;
+  background: var(--surface2);
+  border-radius: 2px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.capture-bar-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 2px;
+  transition: width .3s;
+}
+
 </style>
 </head>
 <body>
@@ -261,7 +303,7 @@ body{
 
     <!-- Feed -->
     <div class="feed">
-      <img id="feed-img" src="/video_feed" alt="Live feed" onerror="this.style.display='none';document.getElementById('feed-off').style.display='flex'"/>
+      <img id="feed-img" alt="Live feed" onerror="this.style.display='none';document.getElementById('feed-off').style.display='flex'"/>
       <div class="feed-off" id="feed-off">FEED OFFLINE</div>
       <div class="feed-overlay">
         <div class="feed-row">
@@ -380,6 +422,18 @@ body{
       <span>+</span> Add flagged person
     </button>
 
+
+    <div class="slabel">Trusted faces</div>
+    <div class="scard" id="trusted-card">
+      <div class="srow" style="justify-content:center;color:var(--hint);font-size:12px">
+        No trusted faces registered
+      </div>
+    </div>
+    <button class="qbtn" style="width:100%;margin-bottom:16px;justify-content:center"
+            onclick="openRegister()">
+      <span>👤</span> Register trusted face
+    </button>
+
     <!-- System -->
     <div class="slabel">System</div>
     <div class="scard">
@@ -389,6 +443,52 @@ body{
       <div class="srow"><div class="srow-info"><div class="srow-label">Social media search</div><div class="srow-sub">Reverse-search unknown faces</div></div><div class="tog" id="tog-soc" onclick="toggleS('soc')"><div class="togk"></div></div></div>
       <div class="srow"><div class="srow-info"><div class="srow-label">Save all motion</div><div class="srow-sub">Save non-threat motion to history</div></div><div class="tog" id="tog-hist" onclick="toggleS('hist')"><div class="togk"></div></div></div>
     </div>
+
+    <div class="slabel">Notifications</div>
+<div class="scard">
+  <div class="srow">
+    <div class="srow-info">
+      <div class="srow-label">Motion alerts (Tier 0)</div>
+      <div class="srow-sub">Notify for all motion — cars, animals, passing people</div>
+    </div>
+    <div class="tog off" id="tog-tier0" onclick="toggleTier(0)">
+      <div class="togk"></div>
+    </div>
+  </div>
+  <div class="srow">
+    <div class="srow-info">
+      <div class="srow-label">Delivery alerts (Tier 1)</div>
+      <div class="srow-sub">Notify for deliveries and visitors</div>
+    </div>
+    <div class="tog" id="tog-tier1" onclick="toggleTier(1)">
+      <div class="togk"></div>
+    </div>
+  </div>
+  <div class="srow">
+    <div class="srow-info">
+      <div class="srow-label">Security alerts (Tier 2+)</div>
+      <div class="srow-sub">Always on — cannot be disabled</div>
+    </div>
+    <div style="font-size:10px;color:var(--green);font-family:var(--mono)">ALWAYS ON</div>
+  </div>
+</div>
+
+<div class="slabel">Neighborhood network</div>
+<div class="scard" id="network-card">
+  <div class="srow">
+    <div class="srow-info">
+      <div class="srow-label">Network status</div>
+      <div class="srow-sub" id="network-status-sub">Checking...</div>
+    </div>
+    <div class="chip-dot" id="network-dot" style="margin-right:8px"></div>
+  </div>
+  <div class="srow" id="network-threats-row" style="display:none">
+    <div class="srow-info">
+      <div class="srow-label" id="network-threats-label">0 network threats</div>
+      <div class="srow-sub">Threats shared from nearby NxV cameras</div>
+    </div>
+  </div>
+</div>
 
     <!-- About -->
     <div class="slabel">About</div>
@@ -494,6 +594,134 @@ const COUNTRIES = {
   'GH':{fmt:'### ### ####',len:10,hint:'GH format: 024x xxx xxxx'},
   'DEFAULT':{fmt:'###########',len:12,hint:'Enter phone number'},
 };
+
+
+
+let _regPollTimer = null;
+
+function openRegister() {
+  document.getElementById('reg-step1').style.display = 'block';
+  document.getElementById('reg-step2').style.display = 'none';
+  document.getElementById('reg-step3').style.display = 'none';
+  document.getElementById('reg-name').value = '';
+  document.getElementById('modal-register').classList.add('open');
+}
+
+async function startCapture() {
+  const name = document.getElementById('reg-name').value.trim();
+  if (!name) { alert('Please enter your name.'); return; }
+
+  try {
+    const r = await fetch(B + '/register_face/start', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ name })
+    });
+    const d = await r.json();
+    if (d.error) { alert(d.error); return; }
+
+    // Switch to capture UI
+    document.getElementById('reg-step1').style.display = 'none';
+    document.getElementById('reg-step2').style.display = 'block';
+    document.getElementById('reg-status').textContent =
+      'Face the camera and hold still...';
+    document.getElementById('reg-bar').style.width = '0%';
+    document.getElementById('reg-complete-btn').style.display = 'none';
+
+    // Poll progress
+    _regPollTimer = setInterval(pollCapture, 800);
+  } catch(e) {
+    alert('Could not connect to camera. Make sure NxV is running.');
+  }
+}
+
+async function pollCapture() {
+  try {
+    const r = await fetch(B + '/register_face/status');
+    const d = await r.json();
+
+    const pct = d.progress || 0;
+    document.getElementById('reg-bar').style.width = pct + '%';
+    document.getElementById('reg-status').textContent =
+      pct < 100
+        ? 'Capturing... ' + d.frames + ' / ' + d.target + ' frames'
+        : 'Capture complete! Tap Register to finish.';
+
+    if (pct >= 100 || d.status === 'ready') {
+      clearInterval(_regPollTimer);
+      document.getElementById('reg-complete-btn').style.display = 'block';
+    }
+  } catch(e) {}
+}
+
+async function completeRegister() {
+  document.getElementById('reg-status').textContent = 'Processing...';
+  document.getElementById('reg-complete-btn').disabled = true;
+
+  try {
+    const r = await fetch(B + '/register_face/complete', { method: 'POST' });
+    const d = await r.json();
+
+    document.getElementById('reg-step2').style.display = 'none';
+    document.getElementById('reg-step3').style.display = 'block';
+
+    if (d.success) {
+      document.getElementById('reg-result-icon').textContent = '✓';
+      document.getElementById('reg-result-icon').style.color = 'var(--green)';
+      document.getElementById('reg-result-title').textContent = 'Face registered!';
+      document.getElementById('reg-result-msg').textContent = d.message;
+      loadTrustedFaces();
+    } else {
+      document.getElementById('reg-result-icon').textContent = '✗';
+      document.getElementById('reg-result-icon').style.color = 'var(--red)';
+      document.getElementById('reg-result-title').textContent = 'Registration failed';
+      document.getElementById('reg-result-msg').textContent = d.message;
+    }
+  } catch(e) {
+    alert('Error processing registration.');
+  }
+}
+
+async function cancelRegister() {
+  clearInterval(_regPollTimer);
+  await fetch(B + '/register_face/cancel', { method: 'POST' }).catch(()=>{});
+  closeModal('modal-register');
+}
+
+async function loadTrustedFaces() {
+  try {
+    const r     = await fetch(B + '/trusted');
+    const faces = await r.json();
+    const card  = document.getElementById('trusted-card');
+
+    if (!faces.length) {
+      card.innerHTML =
+        '<div class="srow" style="justify-content:center;color:var(--hint);font-size:12px">No trusted faces registered</div>';
+      return;
+    }
+
+    card.innerHTML = faces.map(f => `
+      <div class="srow">
+        <div class="av av0" style="font-size:16px">👤</div>
+        <div class="srow-info">
+          <div class="srow-label">\${f.name}</div>
+          <div class="srow-sub">Registered \${f.added_at?.slice(0,10) || ''}</div>
+        </div>
+        <button class="rmbtn" onclick="removeTrusted('\${f.id}','\${f.name}')">
+          Remove
+        </button>
+      </div>`).join('');
+  } catch(e) {}
+}
+
+async function removeTrusted(id, name) {
+  if (!confirm('Remove ' + name + ' from trusted faces? NxV may flag them again.')) return;
+  await fetch(B + '/trusted/' + id, { method: 'DELETE' });
+  loadTrustedFaces();
+}
+
+
+
 
 let currentCountry = {code:'+1',iso:'US'};
 
@@ -694,17 +922,25 @@ function filterAlerts(f,el){
   renderAlerts();
 }
 
-function alertHTML(a,showBadge=true){
-  const e=(a.level||'none').toLowerCase();
-  return`<div class="aitem">
+function alertHTML(a, showBadge = true) {
+  const e = (a.level || 'none').toLowerCase();
+  const onclick = a.clip_id
+    ? `openVideo('${a.clip_id}','${a.level}','${a.time}','${a.duration||5}')`
+    : '';
+  return `<div class="aitem" ${onclick ? `onclick="${onclick}"` : ''}>
     <div class="aind ${e}"></div>
     <div class="abody">
       <div class="atitle">${a.title}</div>
       <div class="asub">${a.sub}</div>
-      <div class="atime">${a.time}</div>
+      <div class="atime">${a.time}${onclick ? ' · Tap to view clip' : ''}</div>
     </div>
-    ${showBadge?`<span class="abadge ${e}">${a.level||'MOTION'}</span>`:''}
+    ${showBadge ? `<span class="abadge ${e}">${a.level || 'MOTION'}</span>` : ''}
   </div>`;
+}
+
+function openReport(clipId) {
+  const id = clipId || _currentClipId;
+  if (id) window.open(B + '/evidence_report/' + id, '_blank');
 }
 
 function renderAlerts(){
@@ -729,24 +965,22 @@ function switchEvTab(tab,el){
   loadEvidence();
 }
 
-async function loadEvidence(){
-  const el=document.getElementById('ev-scroll');
-  if(evTab==='history'){
-    // Show motion history from memory
-    if(!motionHistory.length){
-      el.innerHTML='<div class="empty"><div class="empty-icon">◉</div>No motion history yet<br><span style="font-size:11px;margin-top:4px;display:block">All detected motion (person, car, animal) appears here</span></div>';
-      return;
+async function loadEvidence() {
+  const el = document.getElementById('ev-scroll');
+
+  if (evTab === 'history') {
+    // Load motion history clips from Pi
+    try {
+      const r = await fetch(B + '/clips?filter=history');
+      const clips = await r.json();
+      if (!clips.length) {
+        el.innerHTML = '<div class="empty"><div class="empty-icon">◉</div>No motion history yet<br><span style="font-size:11px;margin-top:4px;display:block;color:var(--hint)">All detected motion appears here with a short clip</span></div>';
+        return;
+      }
+      el.innerHTML = clips.map(c => clipCard(c)).join('');
+    } catch(e) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">◉</div>No motion history yet</div>';
     }
-    el.innerHTML=motionHistory.map(m=>`
-      <div class="aitem">
-        <div class="aind ${m.threat?'alert':'none'}"></div>
-        <div class="abody">
-          <div class="atitle">${m.title}</div>
-          <div class="asub">${m.sub}</div>
-          <div class="atime">${m.time}</div>
-        </div>
-        <span class="abadge ${m.threat?'alert':'motion'}">${m.threat?'FLAGGED':'MOTION'}</span>
-      </div>`).join('');
     return;
   }
 
@@ -776,6 +1010,80 @@ async function loadEvidence(){
   }catch(e){
     el.innerHTML='<div class="empty"><div class="empty-icon">▶</div>No evidence saved yet</div>';
   }
+}
+
+function clipCard(c) {
+  const esc = (c.escalation || 'NONE').toLowerCase();
+  const keepLabel = c.keep_forever
+    ? '<span style="font-size:9px;color:var(--green);font-family:var(--mono)">KEPT FOREVER</span>'
+    : '<span style="font-size:9px;color:var(--hint);font-family:var(--mono)">AUTO-DELETE 7d</span>';
+
+  return `
+    <div class="evitem" onclick="openVideo('${c.id}','${c.escalation}','${c.time} · ${c.date}','${c.duration}')">
+      <div class="evthumb">
+        <div class="evplay">▶</div>
+        <div class="evbadge">
+          <span class="abadge ${esc}">${c.escalation}</span>
+        </div>
+        <div class="evdur">${c.duration}s</div>
+      </div>
+      <div class="evbody">
+        <div class="evtitle">${c.flagged ? '⚑ ' : ''}${descFromEsc(c.escalation)}</div>
+        <div class="evmeta">${c.time} · ${c.date}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          ${keepLabel}
+          ${c.escalation === 'EMERGENCY' || c.escalation === 'ALERT'
+            ? `<button class="evact" onclick="event.stopPropagation();openReport('${c.id}')">Police report</button>`
+            : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+function descFromEsc(esc) {
+  const map = {
+    'EMERGENCY': 'Emergency threat detected',
+    'ALERT':     'Threat detected',
+    'NOTIFY':    'Suspicious activity',
+    'NONE':      'Motion detected',
+  };
+  return map[esc] || 'Motion detected';
+}
+
+
+// ── Video player functions ────────────────────────────────────────────────────
+
+let _currentClipId = null;
+
+function openVideo(clipId, escalation, timeStr, duration) {
+  _currentClipId = clipId;
+  const player = document.getElementById('vid-player');
+  const esc    = (escalation || 'NONE').toLowerCase();
+
+  document.getElementById('vid-title').textContent = descFromEsc(escalation);
+  document.getElementById('vid-time').textContent  = timeStr;
+  document.getElementById('vid-duration').textContent = duration + 's';
+  document.getElementById('vid-badge').innerHTML =
+    `<span class="abadge ${esc}">${escalation}</span>`;
+
+  const reportBtn = document.getElementById('vid-report-btn');
+  reportBtn.style.display = (escalation === 'EMERGENCY' || escalation === 'ALERT')
+    ? 'block' : 'none';
+
+  // Load video
+  player.src = B + '/clip/' + clipId;
+  player.load();
+  player.play().catch(() => {});  // autoplay may be blocked — user can tap play
+
+  document.getElementById('modal-video').classList.add('open');
+}
+
+function closeVideo() {
+  const player = document.getElementById('vid-player');
+  player.pause();
+  player.src = '';
+  document.getElementById('modal-video').classList.remove('open');
+  _currentClipId = null;
 }
 
 // ── Settings ──
@@ -861,15 +1169,156 @@ async function pollGPS(){
   }catch(e){}
 }
 
+function toggleTier(tier) {
+  fetch(B + '/notifications/settings', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({[`tier_${tier}_enabled`]: true})
+  });
+}
+
+async function loadNetworkStatus() {
+  try {
+    const r = await fetch(B + '/network/status');
+    const d = await r.json();
+    const sub = document.getElementById('network-status-sub');
+    const dot = document.getElementById('network-dot');
+    if (d.enabled) {
+      sub.textContent = `Online · ${d.threats} threats · ${d.trusted} trusted`;
+      dot.style.background = '#1D9E75';
+      const row = document.getElementById('network-threats-row');
+      if (row) row.style.display = 'flex';
+    } else {
+      sub.textContent = 'Offline — set NXV_RELAY_URL to enable';
+      dot.style.background = '#555';
+    }
+  } catch(e) {}
+}
+
 // ── Init ──
 renderHomeAlerts();
+loadNetworkStatus();
 updateBanner();
 updateThreatBar();
+startFeed();
 updateGPS();
+loadTrustedFaces();   
 poll();
 setInterval(poll,3000);
 setInterval(pollGPS,30000);
 setInterval(updateHealth,1000);
+setInterval(loadNetworkStatus, 30000);
+
+    // ── Live feed polling (mobile compatible) ──
+function startFeed() {
+  const img = document.getElementById('feed-img');
+  let errors = 0;
+
+  function fetchFrame() {
+    img.src = B + '/snapshot_feed?' + Date.now();
+    errors = 0;
+  }
+
+  img.onload = () => {
+    img.style.display = 'block';
+    document.getElementById('feed-off').style.display = 'none';
+  };
+  img.onerror = () => {
+    errors++;
+    if (errors > 3) {
+      img.style.display = 'none';
+      document.getElementById('feed-off').style.display = 'flex';
+    }
+  };
+
+  fetchFrame();
+  setInterval(fetchFrame, 500);
+}
+
+
 </script>
+
+<!-- Video player modal -->
+<div class="mback" id="modal-video">
+  <div class="modal" style="padding-bottom:env(safe-area-inset-bottom)">
+    <div class="mhandle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="mtitle" style="margin:0" id="vid-title">Loading...</div>
+      <button class="mcancel" style="width:auto;padding:4px 12px" onclick="closeVideo()">✕</button>
+    </div>
+    <video id="vid-player"
+           controls
+           playsinline
+           webkit-playsinline
+           style="width:100%;border-radius:10px;background:#000;max-height:240px;display:block;margin-bottom:10px">
+      Your browser does not support video playback.
+    </video>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:8px">
+      <span id="vid-time">--</span>
+      <span id="vid-duration">--s</span>
+    </div>
+    <div id="vid-badge" style="margin-bottom:10px"></div>
+    <button class="msubmit" id="vid-report-btn"
+            style="display:none;background:var(--surface2);color:var(--blue);margin-top:0"
+            onclick="openReport()">
+      View police report
+    </button>
+  </div>
+</div>
+<div class="mback" id="modal-register">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="mtitle" style="margin:0">Register trusted face</div>
+      <button class="mcancel" style="width:auto;padding:4px 12px"
+              onclick="cancelRegister()">✕</button>
+    </div>
+
+  
+
+    <!-- Step 1: Enter name -->
+    <div id="reg-step1">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px">
+        Stand in front of the camera and enter your name.
+        NxV will capture your face and never flag you again.
+      </p>
+      <input class="minput" id="reg-name" placeholder="Your name (e.g. Emmanuel)"
+             type="text" style="margin-bottom:10px"/>
+      <button class="msubmit" onclick="startCapture()">Start face capture</button>
+      <button class="mcancel" onclick="closeModal('modal-register')">Cancel</button>
+    </div>
+
+    <!-- Step 2: Capturing -->
+    <div id="reg-step2" style="display:none;text-align:center">
+      <div class="capture-ring">
+        <div class="capture-icon">👤</div>
+      </div>
+      <div class="capture-status" id="reg-status">
+        Face the camera and hold still...
+      </div>
+      <div class="capture-bar-bg">
+        <div class="capture-bar-fill" id="reg-bar" style="width:0%"></div>
+      </div>
+      <p style="font-size:11px;color:var(--hint);margin-bottom:14px">
+        Keep your face centered · Good lighting helps
+      </p>
+      <button class="msubmit" id="reg-complete-btn"
+              style="display:none;background:var(--green)"
+              onclick="completeRegister()">✓ Register now</button>
+      <button class="mcancel" onclick="cancelRegister()">Cancel</button>
+    </div>
+
+    <!-- Step 3: Result -->
+    <div id="reg-step3" style="display:none;text-align:center;padding:10px 0">
+      <div style="font-size:48px;margin-bottom:12px" id="reg-result-icon">✓</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:8px"
+           id="reg-result-title">Registered!</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:20px"
+           id="reg-result-msg"></div>
+      <button class="msubmit" onclick="closeModal('modal-register')">Done</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

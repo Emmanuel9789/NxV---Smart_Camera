@@ -49,11 +49,19 @@ print("[NxV] Evidence packager OK")
 # ── Flask stream app ──────────────────────────────────────────────────────────
 print("[NxV] Loading stream and all AI modules...")
 from camera.stream import app, escalation_engine
+from camera.stream import start_pipeline
+start_pipeline()
+
 
 # Inject dependencies into stream app
 app.camera           = camera
 app.motion_detector  = motion_detector
 app.evidence         = evidence_packager
+
+# Start detection pipeline background thread
+import threading as _t
+from camera.stream import generate_frames as _gf
+_t.Thread(target=lambda: [None for _ in _gf()], daemon=True).start()
 
 print("[NxV] All modules loaded OK")
 
@@ -99,6 +107,8 @@ print(f"""
 ─────────────────────────────────
   Press Ctrl+C to stop
 """)
+
+
 
 # ── Start server ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":
