@@ -1,6 +1,4 @@
 """
-NxV - Social Media Face Search
-ai/social_search.py
 
 When an unknown face reaches medium/high threat score,
 this module reverse-searches the face image using Google Vision API
@@ -11,15 +9,6 @@ Only triggers when:
   - Face is UNKNOWN (not already in flagged DB)
   - Threat score >= 30 (NOTIFY or above)
   - Not searched this person in last 10 minutes
-
-Setup:
-  1. Go to https://console.cloud.google.com
-  2. Create a project → Enable "Cloud Vision API"
-  3. Create an API key → copy it below
-  4. Free tier: 1000 requests/month
-
-Install:
-  pip install google-cloud-vision requests --break-system-packages
 """
 
 import os
@@ -34,7 +23,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 load_dotenv()
 
-# ── Config ────────────────────────────────────────────────────────────────────
+# Config 
 # Set as environment variable: export NXV_GOOGLE_API_KEY="AIzaXXXXX"
 GOOGLE_API_KEY = os.environ.get("NXV_GOOGLE_API_KEY", "")
 
@@ -48,7 +37,7 @@ SEARCH_COOLDOWN = 600   # 10 minutes
 # Minimum confidence score from Vision API to count as a match
 MIN_MATCH_SCORE = 0.7
 
-# ── Risk keywords to scan results for ────────────────────────────────────────
+# Risk keywords to scan results for 
 # If any of these appear in search results → threat score boosted
 DANGER_KEYWORDS = [
     "arrested", "criminal", "convicted", "wanted", "felony",
@@ -149,7 +138,7 @@ class SocialSearchEngine:
         face_crop = frame[y1:y2, x1:x2]
         return self.search(face_crop, person_id)
 
-    # ── Google Vision API ─────────────────────────────────────────────────────
+    # Google Vision API 
 
     def _encode_face(self, face_crop) -> str | None:
         """Convert face numpy array to base64 JPEG string."""
@@ -204,7 +193,7 @@ class SocialSearchEngine:
             }
         }
 
-    # ── Result parsing ────────────────────────────────────────────────────────
+    # Result parsing
 
     def _parse_results(self, raw: dict, person_id: int) -> dict:
         """

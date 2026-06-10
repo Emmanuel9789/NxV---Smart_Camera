@@ -1,7 +1,4 @@
 """
-NxV - Motion Clip Recorder
-utils/clip_recorder.py
-
 Saves a short clip for every motion event.
 Auto-deletes based on escalation level:
 

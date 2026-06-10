@@ -1,7 +1,4 @@
 """
-NxV - Call Escalation Chain
-alerts/call_chain.py
-
 Calls owner first, then trusted contacts in sequence.
 Final fallback sends 911 prompt to all if nobody answers.
 """
@@ -11,20 +8,20 @@ import time
 import threading
 from datetime import datetime
 
-# ── Contact list ──────────────────────────────────────────────────────────────
-CONTACTS = [
+#  Contact list 
+CONTACTS = [ #Hash map
     {"name": "Owner",             "phone": os.environ.get("NXV_OWNER_PHONE",    ""), "role": "owner"},
     {"name": "Trusted Contact 1", "phone": os.environ.get("NXV_CONTACT_1_PHONE",""), "role": "contact"},
     {"name": "Trusted Contact 2", "phone": os.environ.get("NXV_CONTACT_2_PHONE",""), "role": "contact"},
     {"name": "Trusted Contact 3", "phone": os.environ.get("NXV_CONTACT_3_PHONE",""), "role": "contact"},
 ]
 
-# ── Config ────────────────────────────────────────────────────────────────────
+# Config 
 ANSWER_WAIT_SECS = 30
 CALL_TIMEOUT     = 25
 TEST_MODE        = os.environ.get("NXV_TEST_MODE", "true").lower() == "true"
 
-# ── Twilio ────────────────────────────────────────────────────────────────────
+# Twilio 
 try:
     from twilio.rest import Client as TwilioClient
     TWILIO_SID   = os.environ.get("NXV_TWILIO_SID",   "")
@@ -71,7 +68,7 @@ class CallChain:
     def answered_by(self) -> str | None:
         return self._answered_by
 
-    def _run_chain(self, threat_score, flags, clip_path, address):
+    def _run_chain(self, threat_score, flags, clip_path, address): #Queue
         time_str = datetime.now().strftime("%I:%M %p")
         date_str = datetime.now().strftime("%B %d")
         answered = False
@@ -82,7 +79,7 @@ class CallChain:
         print(f"[NxV CallChain] Time  : {time_str}")
         print(f"[NxV CallChain] Chain : {len(CONTACTS)} contacts\n")
 
-        for i, contact in enumerate(CONTACTS):
+        for i, contact in enumerate(CONTACTS):# QUEUE TRAVERSAL (FIFO PROCESSING)
             if not self._active:
                 return
 
@@ -193,7 +190,7 @@ class CallChain:
         else:
             print("[NxV CallChain] PRODUCTION MODE — 911 would be called here")
 
-    def _make_call(self, phone: str, message: str, name: str) -> bool:
+    def _make_call(self, phone: str, message: str, name: str) -> bool: 
         twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Say voice="alice">{message}</Say>

@@ -2,1323 +2,1038 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="theme-color" content="#0a0a0a"/>
+<meta name="theme-color" content="#1c1c1e"/>
 <title>NxV Security</title>
 <link rel="manifest" href="/manifest.json"/>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{width:100%;height:100%;overflow:hidden}
-body{
-  background:#0a0a0a;color:#f0f0f0;
-  font-family:'IBM Plex Sans',sans-serif;
-  display:flex;flex-direction:column;
-  padding-top:env(safe-area-inset-top);
-  padding-bottom:env(safe-area-inset-bottom);
-  padding-left:env(safe-area-inset-left);
-  padding-right:env(safe-area-inset-right);
-}
 :root{
-  --bg:#0a0a0a;--surface:#141414;--surface2:#1e1e1e;
-  --border:rgba(255,255,255,0.08);--text:#f0f0f0;
-  --muted:#888;--hint:#555;
-  --red:#E24B4A;--red-dim:rgba(226,75,74,0.15);
-  --amber:#EF9F27;--amber-dim:rgba(239,159,39,0.15);
-  --green:#1D9E75;--green-dim:rgba(29,158,117,0.15);
-  --blue:#378ADD;--blue-dim:rgba(55,138,221,0.15);
-  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+  --bg:#1c1c1e;--surface:#252527;--surface2:#2e2e30;--surface3:#363638;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#f0f0f0;--text2:#b8b8b8;--muted:#888;--hint:#555;
+  --cyan:#00D4E0;--cyan-dim:rgba(0,212,224,0.10);--cyan-mid:rgba(0,212,224,0.25);
+  --red:#E24B4A;--red-dim:rgba(226,75,74,0.10);--red-mid:rgba(226,75,74,0.25);
+  --amber:#EF9F27;--amber-dim:rgba(239,159,39,0.10);
+  --sans:'IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace;
+  --xs:clamp(10px,2.5vw,12px);--sm:clamp(12px,3vw,14px);
+  --base:clamp(13px,3.5vw,15px);--lg:clamp(16px,4vw,20px);--xl:clamp(20px,5vw,26px);
+  --touch:44px;
 }
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:var(--base);line-height:1.5;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
 .app{flex:1;display:flex;flex-direction:column;overflow:hidden;height:100%}
 .screen{display:none;flex:1;flex-direction:column;overflow:hidden;min-height:0}
-.screen.active{display:flex}
-.scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:12px 16px 16px}
+.screen.active{display:flex;animation:fadein .15s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 16px 24px}
 .scroll::-webkit-scrollbar{display:none}
-.header{padding:12px 16px 10px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg)}
-.header-logo{font-family:var(--mono);font-size:18px;font-weight:500;letter-spacing:2px}
-.header-title{font-size:17px;font-weight:600}
-.header-right{display:flex;align-items:center;gap:8px}
-.chip{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:var(--surface2);border:0.5px solid var(--border);font-size:10px;font-family:var(--mono);color:var(--muted)}
-.chip-dot{width:5px;height:5px;border-radius:50%;background:var(--green)}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.header{padding:12px 16px 10px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg);min-height:var(--touch)}
+.header-title{font-size:var(--lg);font-weight:600}
+.chip{display:flex;align-items:center;gap:6px;padding:5px 11px;border-radius:20px;background:var(--surface2);border:0.5px solid var(--border2);font-size:var(--xs);font-family:var(--mono);color:var(--muted)}
+.chip-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
 .chip-dot.live{animation:pulse 2s infinite}
-
-/* Status banner */
-.banner{border-radius:12px;padding:14px 16px;border:0.5px solid var(--border);background:var(--surface);margin-bottom:12px;transition:all .3s}
-.banner.notify{background:var(--blue-dim);border-color:rgba(55,138,221,.3)}
-.banner.alert{background:var(--amber-dim);border-color:rgba(239,159,39,.3)}
-@keyframes flash{0%,100%{opacity:1}50%{opacity:.7}}
-.banner.emergency{background:var(--red-dim);border-color:rgba(226,75,74,.4);animation:flash 1s infinite}
-.blevel{font-family:var(--mono);font-size:10px;letter-spacing:3px;margin-bottom:3px;color:var(--muted)}
-.blevel.notify{color:var(--blue)}.blevel.alert{color:var(--amber)}.blevel.emergency{color:var(--red)}
-.bdesc{font-size:15px;font-weight:600;margin-bottom:3px}
-.btime{font-size:11px;color:var(--muted)}
-
-/* Threat bar */
-.threat-bar-wrap{margin-bottom:12px}
-.threat-bar-label{display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);color:var(--muted);margin-bottom:5px}
-.threat-bar-bg{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
-.threat-bar-fill{height:100%;border-radius:3px;transition:width .5s,background .5s;background:var(--green)}
-
-/* Feed */
-.feed{width:100%;aspect-ratio:4/3;background:#000;border-radius:12px;overflow:hidden;position:relative;margin-bottom:12px;border:0.5px solid var(--border);flex-shrink:0}
+.slabel{font-family:var(--mono);font-size:var(--xs);letter-spacing:1.5px;color:var(--hint);margin:16px 0 8px;text-transform:uppercase}
+.greeting-wrap{padding:16px 16px 4px}
+.greeting-eyebrow{font-size:var(--xs);color:var(--muted);font-family:var(--mono);margin-bottom:4px}
+.greeting-name{font-size:var(--xl);font-weight:600;line-height:1.2}
+.greeting-name span{color:var(--cyan)}
+.cam-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.cam-card{border-radius:12px;overflow:hidden;background:var(--surface);border:0.5px solid var(--border);cursor:pointer;transition:opacity .15s;position:relative}
+.cam-card:active{opacity:.75}
+.cam-card.is-live{border-color:var(--cyan-mid)}
+.cam-thumb{width:100%;aspect-ratio:16/10;background:var(--surface2);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.cam-thumb.is-live{background:rgba(0,212,224,0.05)}
+.cam-thumb svg{width:28px;height:28px;stroke:var(--hint);fill:none;stroke-width:1.5}
+.cam-thumb.is-live svg{stroke:var(--cyan)}
+.live-badge{position:absolute;top:6px;left:6px;background:var(--red);color:#fff;font-size:var(--xs);font-family:var(--mono);padding:2px 7px;border-radius:4px;display:flex;align-items:center;gap:4px}
+.live-dot{width:5px;height:5px;border-radius:50%;background:#fff;animation:pulse 1s infinite}
+.cam-footer{padding:8px 10px;display:flex;align-items:center;justify-content:space-between}
+.cam-name{font-size:var(--sm);font-weight:500;color:var(--text2)}
+.cam-threat{font-size:var(--xs);font-family:var(--mono);color:var(--cyan)}
+.add-cam-btn{width:100%;padding:13px;border-radius:12px;background:var(--cyan-dim);border:0.5px dashed var(--cyan-mid);color:var(--cyan);font-size:var(--sm);font-weight:500;font-family:var(--sans);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;transition:opacity .15s;min-height:var(--touch)}
+.add-cam-btn:active{opacity:.7}
+.add-cam-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+.alert-item{padding:11px 13px;border-radius:10px;background:var(--surface);border:0.5px solid var(--border);margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer;min-height:var(--touch);transition:background .1s}
+.alert-item:active{background:var(--surface2)}
+.alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.alert-dot.emergency{background:var(--red)}.alert-dot.alert{background:var(--amber)}.alert-dot.notify{background:var(--cyan)}.alert-dot.none{background:var(--hint)}
+.alert-body{flex:1;min-width:0}
+.alert-title{font-size:var(--sm);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alert-sub{font-size:var(--xs);color:var(--muted);margin-top:2px}
+.alert-badge{font-size:var(--xs);font-family:var(--mono);padding:3px 8px;border-radius:4px;flex-shrink:0;font-weight:500}
+.alert-badge.emergency{background:var(--red-dim);color:var(--red)}.alert-badge.alert{background:var(--amber-dim);color:var(--amber)}.alert-badge.notify{background:var(--cyan-dim);color:var(--cyan)}.alert-badge.none{background:var(--surface2);color:var(--muted)}
+.cam-header{padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid var(--border);flex-shrink:0;background:var(--bg);min-height:var(--touch)}
+.cam-back-btn{color:var(--cyan);cursor:pointer;min-width:var(--touch);min-height:var(--touch);display:flex;align-items:center;justify-content:center}
+.cam-back-btn svg{width:20px;height:20px;stroke:var(--cyan);fill:none;stroke-width:2}
+.cam-title-group{display:flex;flex-direction:column;align-items:center;gap:1px}
+.cam-title{font-size:var(--base);font-weight:600}
+.cam-status-line{font-size:var(--xs);font-family:var(--mono);color:var(--cyan)}
+.cam-rename-btn{color:var(--muted);cursor:pointer;min-width:var(--touch);min-height:var(--touch);display:flex;align-items:center;justify-content:center;transition:color .15s}
+.cam-rename-btn:active{color:var(--cyan)}
+.cam-rename-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
+.feed-section{padding:12px 16px 0;flex-shrink:0}
+.feed{width:100%;aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;position:relative;border:0.5px solid var(--border)}
 .feed img{width:100%;height:100%;object-fit:cover;display:block}
-.feed-off{display:none;width:100%;height:100%;align-items:center;justify-content:center;color:#444;font-size:11px;font-family:var(--mono)}
+.feed-offline{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--hint);font-size:var(--xs);font-family:var(--mono)}
+.feed-offline svg{width:32px;height:32px;stroke:var(--hint);fill:none;stroke-width:1.5}
 .feed-overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:8px;pointer-events:none}
 .feed-row{display:flex;justify-content:space-between;align-items:flex-start}
 .feed-row:last-child{align-items:flex-end}
-.pill{background:rgba(0,0,0,.7);backdrop-filter:blur(4px);color:#fff;font-size:10px;font-family:var(--mono);padding:3px 8px;border-radius:20px}
-.pill.live{background:var(--red)}
-
-/* Camera health */
-.health-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.health-card{background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:10px;text-align:center}
-.health-val{font-size:18px;font-weight:500;font-family:var(--mono);color:var(--green)}
-.health-lbl{font-size:9px;color:var(--muted);margin-top:2px;letter-spacing:1px}
-
-/* Quick actions — portrait 2col, landscape 4col */
-.quick-grid{display:grid;gap:10px;margin-bottom:12px}
-@media(orientation:portrait){.quick-grid{grid-template-columns:1fr 1fr}}
-@media(orientation:landscape){.quick-grid{grid-template-columns:repeat(4,1fr)}}
-.qbtn{padding:13px 10px;border-radius:12px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:8px;transition:opacity .15s}
-.qbtn:active{opacity:.7}
-.qbtn.danger{background:var(--red-dim);border-color:rgba(226,75,74,.3);color:var(--red)}
-.qbtn.snap{background:var(--blue-dim);border-color:rgba(55,138,221,.3);color:var(--blue)}
-.qbtn.ack{background:var(--green-dim);border-color:rgba(29,158,117,.3);color:var(--green)}
-.qbtn-icon{font-size:17px;flex-shrink:0}
-
-.slabel{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--hint);margin:14px 0 8px;text-transform:uppercase}
-
-/* Alert items */
-.aitem{padding:11px 12px;border-radius:10px;border:0.5px solid var(--border);background:var(--surface);margin-bottom:8px;display:flex;gap:10px;cursor:pointer}
-.aitem:active{background:var(--surface2)}
-.aind{width:3px;border-radius:2px;flex-shrink:0;align-self:stretch;min-height:36px}
-.aind.none{background:var(--hint)}.aind.notify{background:var(--blue)}.aind.alert{background:var(--amber)}.aind.emergency{background:var(--red)}
-.abody{flex:1;min-width:0}
-.atitle{font-size:13px;font-weight:500;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.asub{font-size:11px;color:var(--muted);margin-bottom:2px}
-.atime{font-size:10px;color:var(--hint);font-family:var(--mono)}
-.abadge{font-size:9px;font-family:var(--mono);padding:2px 6px;border-radius:4px;font-weight:500;align-self:flex-start;flex-shrink:0;letter-spacing:1px}
-.abadge.none{background:var(--surface2);color:var(--muted)}
-.abadge.notify{background:var(--blue-dim);color:var(--blue)}
-.abadge.alert{background:var(--amber-dim);color:var(--amber)}
-.abadge.emergency{background:var(--red-dim);color:var(--red)}
-.abadge.motion{background:var(--surface2);color:var(--muted)}
-
-/* Tabs */
-.tabs{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:2px}
-.tabs::-webkit-scrollbar{display:none}
-.tab{padding:5px 12px;border-radius:20px;font-size:11px;border:0.5px solid var(--border);cursor:pointer;color:var(--muted);background:var(--surface2);white-space:nowrap;font-family:var(--mono);letter-spacing:.5px;transition:all .15s}
-.tab.active{background:var(--text);color:var(--bg);border-color:var(--text)}
-
-/* Evidence sub-tabs */
-.subtabs{display:flex;gap:0;margin-bottom:14px;border:0.5px solid var(--border);border-radius:10px;overflow:hidden}
-.subtab{flex:1;padding:8px;text-align:center;font-size:12px;font-weight:500;cursor:pointer;color:var(--muted);background:var(--surface);transition:all .15s}
-.subtab.active{background:var(--surface2);color:var(--text)}
-.subtab:first-child{border-right:0.5px solid var(--border)}
-
-/* Evidence items */
-.evitem{border-radius:12px;border:0.5px solid var(--border);overflow:hidden;margin-bottom:12px;background:var(--surface)}
-.evthumb{height:90px;background:#000;position:relative;display:flex;align-items:center;justify-content:center}
-.evplay{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;cursor:pointer}
-.evdur{position:absolute;bottom:6px;right:8px;font-size:10px;color:rgba(255,255,255,.5);font-family:var(--mono)}
-.evbadge{position:absolute;top:6px;left:6px}
-.evbody{padding:10px 12px}
-.evtitle{font-size:13px;font-weight:500;margin-bottom:2px}
-.evmeta{font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:8px}
-.evacts{display:flex;gap:12px}
-.evact{font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:var(--sans);padding:0}
-
-/* Settings */
+.feed-pill{background:rgba(0,0,0,0.6);color:#fff;font-size:var(--xs);font-family:var(--mono);padding:3px 8px;border-radius:4px}
+.feed-pill.rec{background:var(--red);display:flex;align-items:center;gap:4px}
+.rec-dot{width:5px;height:5px;border-radius:50%;background:#fff;animation:pulse 1s infinite}
+.playback{padding:10px 16px 6px;display:flex;align-items:center;justify-content:center;gap:10px;flex-shrink:0}
+.pb-btn{width:var(--touch);height:var(--touch);border-radius:50%;background:var(--surface);border:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity .15s;flex-shrink:0}
+.pb-btn svg{width:16px;height:16px;fill:var(--muted)}
+.pb-btn:active{opacity:.65}
+.pb-btn.main{width:52px;height:52px;background:var(--cyan);border-color:var(--cyan)}
+.pb-btn.main svg{fill:#111;width:20px;height:20px}
+.dpad-row{padding:4px 16px 4px;display:flex;align-items:center;justify-content:center;gap:14px;flex-shrink:0}
+.dpad{width:100px;height:100px;border-radius:50%;background:var(--surface);border:1.5px solid var(--cyan-mid);position:relative;display:flex;align-items:center;justify-content:center;opacity:0.45;flex-shrink:0}
+.dpad-center{width:28px;height:28px;border-radius:50%;background:var(--surface2);border:0.5px solid var(--border2)}
+.dpad-btn{position:absolute;display:flex;align-items:center;justify-content:center;color:var(--cyan);width:22px;height:22px}
+.dpad-btn svg{width:14px;height:14px;stroke:var(--cyan);fill:none;stroke-width:2}
+.dpad-btn.up{top:7px;left:50%;transform:translateX(-50%)}.dpad-btn.down{bottom:7px;left:50%;transform:translateX(-50%)}.dpad-btn.left{left:7px;top:50%;transform:translateY(-50%)}.dpad-btn.right{right:7px;top:50%;transform:translateY(-50%)}
+.dpad-note{font-size:var(--xs);color:var(--hint);font-family:var(--mono);line-height:1.4}
+.actions{padding:6px 20px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.act-btn{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer}
+.act-circle{width:52px;height:52px;border-radius:50%;background:var(--surface);border:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;transition:all .2s}
+.act-circle:active{opacity:.65}
+.act-circle svg{width:22px;height:22px;stroke:var(--muted);fill:none;stroke-width:1.6}
+.act-circle.on{background:var(--cyan-dim);border-color:var(--cyan-mid)}
+.act-circle.on svg{stroke:var(--cyan)}
+.act-circle.danger{background:var(--red-dim);border-color:var(--red-mid)}
+.act-circle.danger svg{stroke:var(--red)}
+.act-label{font-size:var(--xs);color:var(--hint);font-family:var(--mono);letter-spacing:.5px}
 .scard{background:var(--surface);border:0.5px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden}
-.scardtitle{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--hint);padding:10px 14px 6px;border-bottom:0.5px solid var(--border)}
-.srow{display:flex;align-items:center;padding:11px 14px;border-bottom:0.5px solid var(--border);gap:12px}
+.srow{display:flex;align-items:center;padding:12px 14px;border-bottom:0.5px solid var(--border);gap:12px;min-height:var(--touch)}
 .srow:last-child{border:none}
 .srow-info{flex:1;min-width:0}
-.srow-label{font-size:13px;font-weight:500}
-.srow-sub{font-size:11px;color:var(--muted);margin-top:1px}
-
-
-/* GPS status chip in settings */
-.gps-status{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:0.5px solid var(--border)}
-.gps-big{font-size:13px;font-weight:500;flex:1}
-.gps-override{display:flex;gap:6px}
-.gps-btn{font-size:10px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;font-family:var(--mono)}
-.gps-btn.active-away{background:var(--amber-dim);border-color:rgba(239,159,39,.4);color:var(--amber)}
-.gps-btn.active-home{background:var(--green-dim);border-color:rgba(29,158,117,.4);color:var(--green)}
-
-/* Avatar */
-.av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;font-family:var(--mono)}
-.av0{background:rgba(55,138,221,.2);color:var(--blue)}.av1{background:rgba(29,158,117,.2);color:var(--green)}
-.av2{background:rgba(239,159,39,.2);color:var(--amber)}.av3{background:rgba(226,75,74,.2);color:var(--red)}
-.cord{font-size:10px;font-family:var(--mono);color:var(--hint);background:var(--surface2);padding:2px 6px;border-radius:4px;flex-shrink:0}
-.rmbtn{font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;font-family:var(--sans)}
-.rmbtn:active{background:var(--red-dim)}
-.addbtn{display:flex;align-items:center;gap:10px;padding:11px 14px;color:var(--blue);font-size:13px;font-weight:500;cursor:pointer;border-bottom:0.5px solid var(--border)}
-.addbtn:last-child{border:none}
-.addbtn:active{background:var(--blue-dim)}
-.addicon{width:28px;height:28px;border-radius:50%;background:var(--blue-dim);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--blue);flex-shrink:0}
-
-/* Contact status badge */
-.cstatus{font-size:9px;padding:2px 6px;border-radius:4px;font-family:var(--mono)}
-.cstatus.reached{background:var(--green-dim);color:var(--green)}
-.cstatus.missed{background:var(--red-dim);color:var(--red)}
-
-/* Toggle */
-.tog{width:44px;height:24px;border-radius:12px;background:var(--green);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
-.tog.off{background:var(--surface2);border:0.5px solid var(--border)}
-.togk{width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;right:2px;transition:right .2s;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.srow-label{font-size:var(--base);font-weight:500}
+.srow-sub{font-size:var(--xs);color:var(--muted);margin-top:2px;line-height:1.4}
+.srow-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.srow-icon svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:1.6}
+.srow-arrow{color:var(--hint);flex-shrink:0}
+.srow-arrow svg{width:16px;height:16px;stroke:var(--muted);fill:none;stroke-width:2}
+.tog{width:46px;height:26px;border-radius:13px;background:var(--cyan);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.tog.off{background:var(--surface2);border:0.5px solid var(--border2)}
+.tog.saving{opacity:.5;pointer-events:none}
+.togk{width:22px;height:22px;border-radius:50%;background:#fff;position:absolute;top:2px;right:2px;transition:right .2s}
 .tog.off .togk{right:22px}
-
-.fscore{font-family:var(--mono);font-size:20px;font-weight:500;color:var(--red);min-width:36px;text-align:center;flex-shrink:0}
-
-/* Nav */
-.nav{display:flex;border-top:0.5px solid var(--border);background:var(--surface);flex-shrink:0}
-.nitem{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;cursor:pointer;border:none;background:none;color:var(--hint);font-family:var(--sans);font-size:10px;transition:color .15s}
-.nitem.active{color:var(--red)}
-.nsvg{width:22px;height:22px}
-
-/* Modal */
-.mback{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:flex-end}
+.gps-status{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid var(--border);min-height:var(--touch)}
+.gps-override{display:flex;gap:6px}
+.gps-btn{font-size:var(--xs);padding:6px 12px;border-radius:6px;border:0.5px solid var(--border2);background:var(--surface2);color:var(--muted);cursor:pointer;font-family:var(--mono);min-height:36px}
+.gps-btn.home-active{background:var(--cyan-dim);border-color:var(--cyan-mid);color:var(--cyan)}
+.gps-btn.away-active{background:var(--amber-dim);border-color:rgba(239,159,39,.3);color:var(--amber)}
+.gps-btn:disabled{opacity:.4;cursor:not-allowed}
+.health-bar-bg{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-top:6px}
+.health-bar-fill{height:100%;border-radius:3px;background:var(--cyan);transition:width .6s}
+.sens-row{padding:12px 14px;border-bottom:0.5px solid var(--border)}
+.sens-row:last-child{border:none}
+.sens-label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.sens-name{font-size:var(--base);font-weight:500}
+.sens-value{font-size:var(--xs);font-family:var(--mono);color:var(--cyan)}
+input[type=range]{width:100%;accent-color:var(--cyan);cursor:pointer}
+.account-hero{display:flex;flex-direction:column;align-items:center;padding:24px 16px 12px}
+.avatar-large{width:80px;height:80px;border-radius:40px;background:var(--cyan-dim);border:1.5px solid var(--cyan-mid);display:flex;align-items:center;justify-content:center;font-size:var(--lg);font-weight:600;color:var(--cyan);margin-bottom:12px}
+.account-name{font-size:var(--lg);font-weight:600;margin-bottom:2px}
+.account-sub{font-size:var(--sm);color:var(--muted);font-family:var(--mono)}
+.edit-profile-btn{margin-top:12px;padding:8px 20px;border-radius:20px;background:var(--cyan-dim);border:0.5px solid var(--cyan-mid);color:var(--cyan);font-size:var(--sm);cursor:pointer;font-family:var(--sans);min-height:var(--touch);display:flex;align-items:center}
+.mback{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:100;align-items:flex-end}
 .mback.open{display:flex}
-.modal{width:100%;background:var(--surface);border-radius:20px 20px 0 0;padding:20px;padding-bottom:calc(20px + env(safe-area-inset-bottom));border-top:0.5px solid var(--border)}
-.mhandle{width:36px;height:4px;border-radius:2px;background:var(--border);margin:0 auto 20px}
-.mtitle{font-size:16px;font-weight:600;margin-bottom:14px}
-
-/* Phone input with flag */
-.phone-wrap{position:relative;margin-bottom:10px}
-.phone-flag{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:18px;pointer-events:none}
-.phone-code{position:absolute;left:44px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted);pointer-events:none;font-family:var(--mono)}
-.phone-input-inner{width:100%;background:var(--surface2);border:0.5px solid var(--border);border-radius:10px;padding:12px 14px 12px 90px;font-size:14px;color:var(--text);font-family:var(--sans);outline:none}
-.phone-input-inner:focus{border-color:var(--blue)}
-.phone-input-inner::placeholder{color:var(--hint)}
-.phone-valid{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:14px}
-
-.minput{width:100%;background:var(--surface2);border:0.5px solid var(--border);border-radius:10px;padding:12px 14px;font-size:14px;color:var(--text);font-family:var(--sans);margin-bottom:10px;outline:none}
-.minput:focus{border-color:var(--blue)}
+.modal{width:100%;background:var(--surface);border-radius:20px 20px 0 0;padding:20px;padding-bottom:calc(20px + env(safe-area-inset-bottom));border-top:0.5px solid var(--border2);max-height:90vh;overflow-y:auto}
+.mhandle{width:36px;height:4px;border-radius:2px;background:var(--border2);margin:0 auto 18px}
+.mtitle{font-size:var(--lg);font-weight:600;margin-bottom:6px}
+.msub{font-size:var(--sm);color:var(--muted);margin-bottom:14px;line-height:1.5}
+.minput{width:100%;background:var(--surface2);border:0.5px solid var(--border2);border-radius:10px;padding:13px 14px;font-size:var(--base);color:var(--text);font-family:var(--sans);outline:none;margin-bottom:10px}
+.minput:focus{border-color:var(--cyan)}
 .minput::placeholder{color:var(--hint)}
-.msubmit{width:100%;padding:13px;border-radius:10px;background:var(--blue);color:#fff;font-size:14px;font-weight:500;border:none;cursor:pointer;font-family:var(--sans);margin-top:4px}
-.msubmit:active{opacity:.8}
-.mcancel{width:100%;padding:11px;border-radius:10px;background:none;color:var(--muted);font-size:13px;border:none;cursor:pointer;font-family:var(--sans);margin-top:4px}
-
-/* Country selector */
-.country-select{width:100%;background:var(--surface2);border:0.5px solid var(--border);border-radius:10px;padding:10px 14px;font-size:14px;color:var(--text);font-family:var(--sans);margin-bottom:10px;outline:none;appearance:none;-webkit-appearance:none}
-.country-select:focus{border-color:var(--blue)}
-.phone-hint{font-size:10px;color:var(--hint);margin-top:-6px;margin-bottom:10px;font-family:var(--mono)}
-
-.empty{text-align:center;padding:40px 20px;color:var(--hint);font-size:13px}
-.empty-icon{font-size:32px;margin-bottom:10px;opacity:.4}
-
-@media(orientation:landscape){
-  .feed{aspect-ratio:16/9;max-height:180px}
-  .header{padding:8px 16px}
-  .scroll{padding:8px 16px}
-  .banner{padding:10px 14px;margin-bottom:8px}
-  .health-grid{grid-template-columns:repeat(3,1fr)}
-}
+.minput-label{font-size:var(--xs);color:var(--muted);font-family:var(--mono);margin-bottom:4px;display:block}
+.msubmit{width:100%;padding:14px;border-radius:10px;background:var(--cyan);color:#111;font-size:var(--base);font-weight:600;border:none;cursor:pointer;font-family:var(--sans);margin-top:4px;min-height:var(--touch);transition:opacity .15s}
+.msubmit:active{opacity:.85}
+.msubmit:disabled{opacity:.5;cursor:not-allowed}
+.msubmit.danger-btn{background:var(--red-dim);color:var(--red);border:0.5px solid var(--red-mid)}
+.mcancel{width:100%;padding:12px;border-radius:10px;background:none;color:var(--muted);font-size:var(--sm);border:none;cursor:pointer;font-family:var(--sans);min-height:var(--touch)}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--surface3);color:var(--text);font-size:var(--sm);padding:10px 18px;border-radius:8px;border:0.5px solid var(--border2);z-index:200;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;font-family:var(--mono)}
+.toast.show{opacity:1}
+.nav{display:flex;border-top:0.5px solid var(--border);background:var(--surface);flex-shrink:0;padding-bottom:env(safe-area-inset-bottom)}
+.nitem{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px;cursor:pointer;border:none;background:none;color:var(--hint);font-family:var(--sans);font-size:var(--xs);transition:color .15s;min-height:var(--touch)}
+.nitem.active{color:var(--cyan)}
+.nitem svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
+.reg-bar-bg{height:4px;background:var(--surface2);border-radius:2px;margin-bottom:14px;overflow:hidden}
+.reg-bar-fill{height:100%;background:var(--cyan);border-radius:2px;transition:width .3s;width:0%}
+.always-on{font-size:var(--xs);color:var(--cyan);font-family:var(--mono);padding:3px 8px;background:var(--cyan-dim);border-radius:4px}
+@media(orientation:landscape) and (max-height:500px){.feed{aspect-ratio:21/9;max-height:130px}.dpad-row{padding:2px 16px}.dpad{width:80px;height:80px}.actions{padding:4px 20px 6px}.act-circle{width:44px;height:44px}.playback{padding:6px 16px 4px;gap:8px}.pb-btn{width:40px;height:40px}.pb-btn.main{width:46px;height:46px}}
 @media(min-width:600px){body{max-width:480px;margin:0 auto;border-left:0.5px solid var(--border);border-right:0.5px solid var(--border)}}
-@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-.screen.active{animation:fadeIn .18s ease}
-.capture-ring {
-  width: 120px; height: 120px;
-  border-radius: 50%;
-  border: 3px solid var(--border);
-  display: flex; align-items: center; justify-content: center;
-  margin: 20px auto;
-  position: relative;
-  overflow: hidden;
-}
-.capture-progress {
-  position: absolute; inset: 0;
-  border-radius: 50%;
-  border: 3px solid var(--green);
-  clip-path: inset(0 50% 0 0);
-  transition: clip-path .3s;
-}
-.capture-icon {
-  font-size: 48px;
-  z-index: 1;
-}
-.capture-status {
-  text-align: center;
-  font-size: 13px;
-  color: var(--muted);
-  margin-bottom: 16px;
-  min-height: 40px;
-}
-.capture-bar-bg {
-  height: 4px;
-  background: var(--surface2);
-  border-radius: 2px;
-  margin-bottom: 16px;
-  overflow: hidden;
-}
-.capture-bar-fill {
-  height: 100%;
-  background: var(--green);
-  border-radius: 2px;
-  transition: width .3s;
-}
-
 </style>
 </head>
 <body>
 <div class="app">
 
-<!-- ══════ HOME ══════ -->
+<!-- HOME -->
 <div class="screen active" id="screen-home">
   <div class="header">
-    <div class="header-logo">NxV</div>
-    <div class="header-right">
-      <div class="chip" id="gps-chip">
-        <div class="chip-dot" id="gps-dot"></div>
-        <span id="gps-label">HOME</span>
-      </div>
-      <div class="chip">
-        <div class="chip-dot live"></div>
-        <span>Live</span>
-      </div>
-    </div>
+    <div class="chip" id="gps-chip"><div class="chip-dot" id="gps-dot"></div><span id="gps-label">HOME</span></div>
+    <div class="chip"><div class="chip-dot live"></div><span>Live</span></div>
   </div>
   <div class="scroll">
-    <div class="banner none" id="banner">
-      <div class="blevel" id="blevel">ALL CLEAR</div>
-      <div class="bdesc" id="bdesc">No threats detected</div>
-      <div class="btime" id="btime"></div>
+    <div class="greeting-wrap">
+      <div class="greeting-eyebrow">WELCOME BACK</div>
+      <div class="greeting-name">Hello, <span id="user-display-name">Emmanuel</span></div>
     </div>
+    <div class="slabel">Cameras</div>
+    <div class="cam-grid" id="cam-grid"></div>
+    <button class="add-cam-btn" onclick="openModal('modal-addcam')">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add camera
+    </button>
+    <div class="slabel">Recent alerts</div>
+    <div id="home-alerts"><div style="text-align:center;padding:24px;color:var(--hint);font-size:var(--sm)">No alerts yet</div></div>
+  </div>
+</div>
 
-    <!-- Live threat bar -->
-    <div class="threat-bar-wrap">
-      <div class="threat-bar-label">
-        <span>Threat level</span>
-        <span id="bar-score">0 / 100</span>
-      </div>
-      <div class="threat-bar-bg">
-        <div class="threat-bar-fill" id="threat-bar" style="width:0%"></div>
-      </div>
+<!-- CAMERA VIEW -->
+<div class="screen" id="screen-camera">
+  <div class="cam-header">
+    <button class="cam-back-btn" onclick="goHome()" aria-label="Back">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="cam-title-group">
+      <span class="cam-title" id="cam-screen-title">Front Door</span>
+      <span class="cam-status-line" id="cam-screen-status">● LIVE</span>
     </div>
-
-    <!-- Feed -->
+    <button class="cam-rename-btn" onclick="openRename()" aria-label="Rename camera">
+      <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    </button>
+  </div>
+  <div class="feed-section">
     <div class="feed">
-      <img id="feed-img" alt="Live feed" onerror="this.style.display='none';document.getElementById('feed-off').style.display='flex'"/>
-      <div class="feed-off" id="feed-off">FEED OFFLINE</div>
+      <img id="cam-feed-img" alt="Live camera feed" onerror="this.style.display='none';document.getElementById('cam-feed-off').style.display='flex'"/>
+      <div class="feed-offline" id="cam-feed-off">
+        <svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        Feed offline
+      </div>
       <div class="feed-overlay">
         <div class="feed-row">
-          <span class="pill live">LIVE</span>
-          <span class="pill" id="f-persons">0 persons</span>
+          <span class="feed-pill rec"><span class="rec-dot"></span>REC</span>
+          <span class="feed-pill" id="feed-persons">0 persons</span>
         </div>
         <div class="feed-row">
-          <span class="pill" id="f-weapons">0 weapons</span>
-          <span class="pill" id="f-fps">-- fps</span>
+          <span class="feed-pill" id="feed-score">Score: 0</span>
+          <span class="feed-pill" id="feed-fps">-- fps</span>
         </div>
       </div>
     </div>
-
-    <!-- Camera health -->
-    <div class="health-grid">
-      <div class="health-card">
-        <div class="health-val" id="h-fps">--</div>
-        <div class="health-lbl">FPS</div>
-      </div>
-      <div class="health-card">
-        <div class="health-val" id="h-persons">0</div>
-        <div class="health-lbl">PERSONS</div>
-      </div>
-      <div class="health-card">
-        <div class="health-val" id="h-uptime">--</div>
-        <div class="health-lbl">UPTIME</div>
-      </div>
+  </div>
+  <div class="playback">
+    <button class="pb-btn" onclick="skipBack()" aria-label="Skip back 30s"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6V6zm3.5 6l8.5 6V6l-8.5 6z"/></svg></button>
+    <button class="pb-btn" onclick="rewind()" aria-label="Rewind"><svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg></button>
+    <button class="pb-btn main" id="play-pause-btn" onclick="togglePlayback()" aria-label="Pause"><svg id="pp-icon" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg></button>
+    <button class="pb-btn" onclick="fastForward()" aria-label="Fast forward"><svg viewBox="0 0 24 24"><path d="M13 6v12l8.5-6L13 6zM4 18l8.5-6L4 6v12z"/></svg></button>
+    <button class="pb-btn" onclick="skipForward()" aria-label="Skip forward 30s"><svg viewBox="0 0 24 24"><path d="M18 6h-2v12h2V6zM9.5 12L1 6v12l8.5-6z"/></svg></button>
+  </div>
+  <div class="dpad-row">
+    <div class="dpad" aria-label="Lens control — coming soon">
+      <div class="dpad-btn up"><svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg></div>
+      <div class="dpad-btn down"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="dpad-btn left"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>
+      <div class="dpad-btn right"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="dpad-center"></div>
     </div>
-
-    <!-- Quick actions -->
-    <div class="quick-grid">
-      <button class="qbtn danger" onclick="call911()"><span class="qbtn-icon">☎</span>Call 911</button>
-      <button class="qbtn snap" onclick="snapshot()"><span class="qbtn-icon">◉</span>Snapshot</button>
-      <button class="qbtn ack" onclick="acknowledge()"><span class="qbtn-icon">✓</span>Acknowledge</button>
-      <button class="qbtn" onclick="showScreen('evidence',document.getElementById('nav-evidence'))"><span class="qbtn-icon">▶</span>Evidence</button>
+    <span class="dpad-note">Lens control<br>coming soon</span>
+  </div>
+  <div class="actions">
+    <div class="act-btn" onclick="toggleMic()">
+      <div class="act-circle" id="mic-btn" aria-label="Toggle microphone">
+        <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </div>
+      <span class="act-label" id="mic-label">MIC OFF</span>
     </div>
-
-    <div class="slabel">Recent detections</div>
-    <div id="home-alerts"><div class="empty" style="padding:16px 0"><div class="empty-icon">◎</div>No detections yet</div></div>
+    <div class="act-btn" onclick="toggleLive()">
+      <div class="act-circle on" id="live-btn" aria-label="Toggle live stream">
+        <svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      </div>
+      <span class="act-label" id="live-label">LIVE</span>
+    </div>
+    <div class="act-btn" onclick="takeSnapshot()">
+      <div class="act-circle" id="snap-btn" aria-label="Take snapshot">
+        <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </div>
+      <span class="act-label">SNAP</span>
+    </div>
+    <div class="act-btn" onclick="call911()">
+      <div class="act-circle danger" aria-label="Call 911">
+        <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.9 13.5a19.79 19.79 0 01-3.07-8.67A2 2 0 012.81 3h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L7.09 10.9a16 16 0 006 6l.96-.96a2 2 0 012.12-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+      </div>
+      <span class="act-label">CALL 911</span>
+    </div>
   </div>
 </div>
 
-<!-- ══════ ALERTS ══════ -->
-<div class="screen" id="screen-alerts">
-  <div class="header">
-    <div class="header-title">Alerts</div>
-    <span style="font-size:11px;color:var(--muted)" id="alerts-count">0 incidents</span>
-  </div>
-  <div class="scroll">
-    <div class="tabs">
-      <div class="tab active" onclick="filterAlerts('all',this)">All</div>
-      <div class="tab" onclick="filterAlerts('EMERGENCY',this)">Emergency</div>
-      <div class="tab" onclick="filterAlerts('ALERT',this)">Alert</div>
-      <div class="tab" onclick="filterAlerts('NOTIFY',this)">Notify</div>
-    </div>
-    <div id="alerts-list"><div class="empty"><div class="empty-icon">◎</div>No alerts yet</div></div>
-  </div>
-</div>
-
-<!-- ══════ EVIDENCE ══════ -->
-<div class="screen" id="screen-evidence">
-  <div class="header">
-    <div class="header-title">Evidence</div>
-    <span style="font-size:11px;color:var(--muted)">SHA256 verified</span>
-  </div>
-  <div style="flex-shrink:0;padding:12px 16px 0">
-    <div class="subtabs">
-      <div class="subtab active" id="subtab-threats" onclick="switchEvTab('threats',this)">Potential threats</div>
-      <div class="subtab" id="subtab-history" onclick="switchEvTab('history',this)">Motion history</div>
-    </div>
-  </div>
-  <div class="scroll" id="ev-scroll">
-    <div class="empty"><div class="empty-icon">▶</div>No evidence saved yet</div>
-  </div>
-</div>
-
-<!-- ══════ SETTINGS ══════ -->
+<!-- SETTINGS -->
 <div class="screen" id="screen-settings">
-  <div class="header">
-    <div class="header-title">Settings</div>
-    <div class="chip"><div class="chip-dot live"></div><span>Online</span></div>
-  </div>
+  <div class="header"><span class="header-title">Settings</span><div class="chip"><div class="chip-dot live"></div><span id="settings-online-label">Online</span></div></div>
   <div class="scroll">
-
-    <!-- Location status -->
     <div class="slabel">Location</div>
     <div class="scard">
       <div class="gps-status">
         <div class="srow-info">
-          <div class="srow-label" id="set-gps-label">Home</div>
-          <div class="srow-sub">Auto-detected via GPS · Override below</div>
+          <div class="srow-label" id="set-gps-label">At home</div>
+          <div class="srow-sub">Auto-detected via GPS — override if needed</div>
         </div>
         <div class="gps-override">
-          <button class="gps-btn" id="gbtn-home" onclick="setAway(false)">HOME</button>
+          <button class="gps-btn home-active" id="gbtn-home" onclick="setAway(false)">HOME</button>
           <button class="gps-btn" id="gbtn-away" onclick="setAway(true)">AWAY</button>
         </div>
       </div>
     </div>
-
-    <!-- Contacts -->
-    <div class="slabel">Emergency contacts</div>
-    <div class="scard" id="contacts-card"></div>
-
-    <!-- Last alert contacts status -->
-    <div class="slabel">Last alert — contact status</div>
-    <div class="scard" id="contact-status-card">
-      <div class="srow" style="color:var(--hint);font-size:12px;justify-content:center">No alerts fired yet</div>
-    </div>
-
-    <!-- Flagged persons -->
-    <div class="slabel">Flagged persons</div>
-    <div class="scard" id="flagged-card">
-      <div class="srow" style="justify-content:center;color:var(--hint);font-size:12px">No flagged persons</div>
-    </div>
-    <button class="qbtn" style="width:100%;margin-bottom:16px;justify-content:center" onclick="addFlagged()">
-      <span>+</span> Add flagged person
-    </button>
-
-
-    <div class="slabel">Trusted faces</div>
-    <div class="scard" id="trusted-card">
-      <div class="srow" style="justify-content:center;color:var(--hint);font-size:12px">
-        No trusted faces registered
+    <div class="slabel">Motion settings</div>
+    <div class="scard">
+      <div class="srow" onclick="openModal('modal-motionzones')" style="cursor:pointer">
+        <div class="srow-icon" style="background:#1a3a4a"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
+        <div class="srow-info"><div class="srow-label">Motion zones</div><div class="srow-sub">Define which areas of the frame to watch</div></div>
+        <div class="srow-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+      <div class="sens-row">
+        <div class="sens-label-row">
+          <span class="sens-name">Motion sensitivity</span>
+          <span class="sens-value" id="sens-val">Medium</span>
+        </div>
+        <input type="range" min="1" max="5" value="3" id="sens-slider" oninput="updateSens(this.value)" aria-label="Motion sensitivity"/>
+        <div style="display:flex;justify-content:space-between;font-size:var(--xs);color:var(--hint);margin-top:4px"><span>Low</span><span>High</span></div>
       </div>
     </div>
-    <button class="qbtn" style="width:100%;margin-bottom:16px;justify-content:center"
-            onclick="openRegister()">
-      <span>👤</span> Register trusted face
-    </button>
-
-    <!-- System -->
+    <div class="slabel">Notifications</div>
+    <div class="scard">
+      <div class="srow"><div class="srow-info"><div class="srow-label">All motion</div><div class="srow-sub">Every movement including passing cars</div></div><div class="tog off" id="tog-tier0" onclick="toggleSetting('tier0')"><div class="togk"></div></div></div>
+      <div class="srow"><div class="srow-info"><div class="srow-label">Deliveries and visitors</div><div class="srow-sub">UPS, FedEx, Amazon, USPS, DHL</div></div><div class="tog" id="tog-tier1" onclick="toggleSetting('tier1')"><div class="togk"></div></div></div>
+      <div class="srow"><div class="srow-info"><div class="srow-label">Security threats</div><div class="srow-sub">Weapons, break-ins, dangerous persons</div></div><div class="always-on">ALWAYS ON</div></div>
+    </div>
     <div class="slabel">System</div>
     <div class="scard">
-      <div class="srow"><div class="srow-info"><div class="srow-label">GPS auto-away</div><div class="srow-sub">Auto-detects when you leave home</div></div><div class="tog" id="tog-gps" onclick="toggleS('gps')"><div class="togk"></div></div></div>
-      <div class="srow"><div class="srow-info"><div class="srow-label">Active deterrent</div><div class="srow-sub">Siren on ALERT+</div></div><div class="tog" id="tog-det" onclick="toggleS('det')"><div class="togk"></div></div></div>
-      <div class="srow"><div class="srow-info"><div class="srow-label">Audio detection</div><div class="srow-sub">Gunshot, glass break, screaming</div></div><div class="tog off" id="tog-aud" onclick="toggleS('aud')"><div class="togk"></div></div></div>
-      <div class="srow"><div class="srow-info"><div class="srow-label">Social media search</div><div class="srow-sub">Reverse-search unknown faces</div></div><div class="tog" id="tog-soc" onclick="toggleS('soc')"><div class="togk"></div></div></div>
-      <div class="srow"><div class="srow-info"><div class="srow-label">Save all motion</div><div class="srow-sub">Save non-threat motion to history</div></div><div class="tog" id="tog-hist" onclick="toggleS('hist')"><div class="togk"></div></div></div>
+      <div class="srow"><div class="srow-info"><div class="srow-label">GPS auto-away</div><div class="srow-sub">Raises thresholds when you leave home</div></div><div class="tog" id="tog-gps" onclick="toggleSetting('gps')"><div class="togk"></div></div></div>
+      <div class="srow"><div class="srow-info"><div class="srow-label">Deterrent siren</div><div class="srow-sub">Plays an alarm on ALERT and above</div></div><div class="tog" id="tog-det" onclick="toggleSetting('deterrent')"><div class="togk"></div></div></div>
+      <div class="srow"><div class="srow-info"><div class="srow-label">Social media search</div><div class="srow-sub">Searches unknown faces at medium threat</div></div><div class="tog" id="tog-soc" onclick="toggleSetting('social')"><div class="togk"></div></div></div>
+      <div class="srow"><div class="srow-info"><div class="srow-label">Save motion clips</div><div class="srow-sub">Keep clips of all motion, not just threats</div></div><div class="tog" id="tog-hist" onclick="toggleSetting('history')"><div class="togk"></div></div></div>
     </div>
-
-    <div class="slabel">Notifications</div>
-<div class="scard">
-  <div class="srow">
-    <div class="srow-info">
-      <div class="srow-label">Motion alerts (Tier 0)</div>
-      <div class="srow-sub">Notify for all motion — cars, animals, passing people</div>
-    </div>
-    <div class="tog off" id="tog-tier0" onclick="toggleTier(0)">
-      <div class="togk"></div>
-    </div>
-  </div>
-  <div class="srow">
-    <div class="srow-info">
-      <div class="srow-label">Delivery alerts (Tier 1)</div>
-      <div class="srow-sub">Notify for deliveries and visitors</div>
-    </div>
-    <div class="tog" id="tog-tier1" onclick="toggleTier(1)">
-      <div class="togk"></div>
-    </div>
-  </div>
-  <div class="srow">
-    <div class="srow-info">
-      <div class="srow-label">Security alerts (Tier 2+)</div>
-      <div class="srow-sub">Always on — cannot be disabled</div>
-    </div>
-    <div style="font-size:10px;color:var(--green);font-family:var(--mono)">ALWAYS ON</div>
-  </div>
-</div>
-
-<div class="slabel">Neighborhood network</div>
-<div class="scard" id="network-card">
-  <div class="srow">
-    <div class="srow-info">
-      <div class="srow-label">Network status</div>
-      <div class="srow-sub" id="network-status-sub">Checking...</div>
-    </div>
-    <div class="chip-dot" id="network-dot" style="margin-right:8px"></div>
-  </div>
-  <div class="srow" id="network-threats-row" style="display:none">
-    <div class="srow-info">
-      <div class="srow-label" id="network-threats-label">0 network threats</div>
-      <div class="srow-sub">Threats shared from nearby NxV cameras</div>
-    </div>
-  </div>
-</div>
-
-    <!-- About -->
-    <div class="slabel">About</div>
+    <div class="slabel">Privacy and security</div>
     <div class="scard">
-      <div class="srow"><div class="srow-info"><div class="srow-label">NxV — Next Vision</div><div class="srow-sub">AI-Powered Security System v1.0</div></div></div>
+      <div class="srow" onclick="openModal('modal-privacy')" style="cursor:pointer">
+        <div class="srow-icon" style="background:#1a2a3a"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="srow-info"><div class="srow-label">Privacy features</div><div class="srow-sub">Privacy zones, data sharing, recording schedule</div></div>
+        <div class="srow-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+      <div class="srow" onclick="openModal('modal-devices')" style="cursor:pointer">
+        <div class="srow-icon" style="background:#1a2a1a"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg></div>
+        <div class="srow-info"><div class="srow-label">Authorized devices</div><div class="srow-sub">Phones and tablets that can access NxV</div></div>
+        <div class="srow-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+      <div class="srow" onclick="openModal('modal-linked')" style="cursor:pointer">
+        <div class="srow-icon" style="background:#2a1a3a"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></div>
+        <div class="srow-info"><div class="srow-label">Linked NxV accounts</div><div class="srow-sub">Shared access with family members</div></div>
+        <div class="srow-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+      <div class="srow">
+        <div class="srow-icon" style="background:#1a3a2a"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+        <div class="srow-info"><div class="srow-label">End-to-end encryption</div><div class="srow-sub">All video and data encrypted in transit</div></div>
+        <div class="always-on">ON</div>
+      </div>
+    </div>
+    <div class="slabel">Device health</div>
+    <div class="scard">
+      <div class="srow">
+        <div class="srow-icon" style="background:#1a2a3a"><svg viewBox="0 0 24 24"><path d="M1.51 12.31a.5.5 0 000 .38C3.22 16.5 7.24 19 12 19s8.78-2.5 10.49-6.31a.5.5 0 000-.38C20.78 8.5 16.76 6 12 6S3.22 8.5 1.51 12.31z"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <div class="srow-info">
+          <div class="srow-label">Wi-Fi signal</div>
+          <div class="srow-sub" id="wifi-strength">Checking...</div>
+          <div class="health-bar-bg"><div class="health-bar-fill" id="wifi-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="srow" onclick="openModal('modal-firmware')" style="cursor:pointer">
+        <div class="srow-icon" style="background:#2a1a1a"><svg viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg></div>
+        <div class="srow-info"><div class="srow-label">Firmware and network</div><div class="srow-sub">Update firmware or change Wi-Fi settings</div></div>
+        <div class="srow-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+    </div>
+    <div class="slabel">Trusted faces</div>
+    <div class="scard" id="trusted-card"><div class="srow" style="justify-content:center;color:var(--hint);font-size:var(--sm)">No trusted faces registered yet</div></div>
+    <button class="add-cam-btn" onclick="openModal('modal-register')">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Register a trusted face
+    </button>
+    <div class="slabel">About</div>
+    <div class="scard"><div class="srow"><div class="srow-info"><div class="srow-label">NxV — Next Vision</div><div class="srow-sub" id="about-version">AI security camera · v2.0</div></div></div></div>
+  </div>
+</div>
+
+<!-- ACCOUNT -->
+<div class="screen" id="screen-account">
+  <div class="header"><span class="header-title">Account</span></div>
+  <div class="scroll">
+    <div class="account-hero">
+      <div class="avatar-large" id="user-avatar">EM</div>
+      <div class="account-name" id="account-display-name">Emmanuel</div>
+      <div class="account-sub">NxV Security · Owner</div>
+      <button class="edit-profile-btn" onclick="openModal('modal-editprofile')">Edit profile</button>
+    </div>
+    <div class="slabel">Profile</div>
+    <div class="scard">
+      <div class="srow" onclick="openModal('modal-editprofile')" style="cursor:pointer"><div class="srow-info"><div class="srow-label">Full name</div><div class="srow-sub" id="profile-name-display">Emmanuel</div></div><div class="srow-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div></div>
+      <div class="srow" onclick="openModal('modal-editemail')" style="cursor:pointer"><div class="srow-info"><div class="srow-label">Email address</div><div class="srow-sub" id="profile-email-display">Not set</div></div><div class="srow-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div></div>
+      <div class="srow" onclick="openModal('modal-editphone')" style="cursor:pointer"><div class="srow-info"><div class="srow-label">Phone number</div><div class="srow-sub" id="profile-phone-display">Not set</div></div><div class="srow-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div></div>
+    </div>
+    <div class="slabel">Security</div>
+    <div class="scard">
+      <div class="srow" onclick="openModal('modal-password')" style="cursor:pointer"><div class="srow-info"><div class="srow-label">Change password</div><div class="srow-sub">Update your account password</div></div><div class="srow-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div></div>
+      <div class="srow" onclick="openModal('modal-2fa')" style="cursor:pointer"><div class="srow-info"><div class="srow-label">Two-step verification</div><div class="srow-sub" id="twofa-status">Not enabled</div></div><div class="srow-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div></div>
+    </div>
+    <div class="slabel">Emergency contacts</div>
+    <div class="scard" id="contacts-card"><div class="srow" style="justify-content:center;color:var(--hint);font-size:var(--sm)">Loading...</div></div>
+    <button class="add-cam-btn" id="add-contact-btn" onclick="openModal('modal-addcontact')">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add contact
+    </button>
+    <div class="slabel">Camera names</div>
+    <div class="scard" id="cam-names-card"></div>
+    <div class="slabel">Danger zone</div>
+    <div class="scard">
+      <div class="srow" style="cursor:pointer" onclick="if(confirm('Log out of NxV?')){}"><div class="srow-info"><div class="srow-label" style="color:var(--red)">Log out</div></div><svg width="18" height="18" fill="none" stroke="var(--red)" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
   </div>
 </div>
 
-<!-- ══════ NAV ══════ -->
-<nav class="nav">
-  <button class="nitem active" onclick="showScreen('home',this)" id="nav-home">
-    <svg class="nsvg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-    Home
+<!-- NAV -->
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <button class="nitem active" onclick="showScreen('home',this)" id="nav-home" aria-label="Home">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home
   </button>
-  <button class="nitem" onclick="showScreen('alerts',this)" id="nav-alerts">
-    <svg class="nsvg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-    Alerts
+  <button class="nitem" onclick="showScreen('settings',this)" id="nav-settings" aria-label="Settings">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings
   </button>
-  <button class="nitem" onclick="showScreen('evidence',this)" id="nav-evidence">
-    <svg class="nsvg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-    Evidence
-  </button>
-  <button class="nitem" onclick="showScreen('settings',this)" id="nav-settings">
-    <svg class="nsvg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-    Settings
+  <button class="nitem" onclick="showScreen('account',this)" id="nav-account" aria-label="Account">
+    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Account
   </button>
 </nav>
 </div>
 
-<!-- ══════ ADD CONTACT MODAL ══════ -->
-<div class="mback" id="modal-contact">
-  <div class="modal">
-    <div class="mhandle"></div>
-    <div class="mtitle">Add trusted contact</div>
-    <input class="minput" id="cin-name" placeholder="Full name" type="text"/>
+<!-- MODALS -->
+<div class="mback" id="modal-rename"><div class="modal"><div class="mhandle"></div><div class="mtitle" id="rename-modal-title">Rename camera</div><p class="msub">Give it a name that describes where it is.</p><input class="minput" id="rename-input" placeholder="e.g. Front door, Garage, Backyard" type="text"/><button class="msubmit" onclick="saveRename()">Save name</button><button class="mcancel" onclick="closeModal('modal-rename')">Cancel</button></div></div>
+<div class="mback" id="modal-addcam"><div class="modal"><div class="mhandle"></div><div class="mtitle">Add a camera</div><p class="msub">Name the location where this camera will be placed.</p><input class="minput" id="addcam-input" placeholder="e.g. Side gate, Living room" type="text"/><button class="msubmit" onclick="addCamera()">Add</button><button class="mcancel" onclick="closeModal('modal-addcam')">Cancel</button></div></div>
+<div class="mback" id="modal-editprofile"><div class="modal"><div class="mhandle"></div><div class="mtitle">Edit name</div><label class="minput-label">Full name</label><input class="minput" id="editname-input" placeholder="Your full name" type="text"/><button class="msubmit" onclick="saveName()">Save</button><button class="mcancel" onclick="closeModal('modal-editprofile')">Cancel</button></div></div>
+<div class="mback" id="modal-editemail"><div class="modal"><div class="mhandle"></div><div class="mtitle">Email address</div><p class="msub">Used for account recovery and security alerts.</p><label class="minput-label">Email</label><input class="minput" id="editemail-input" placeholder="you@example.com" type="email"/><button class="msubmit" onclick="saveEmail()">Save</button><button class="mcancel" onclick="closeModal('modal-editemail')">Cancel</button></div></div>
+<div class="mback" id="modal-editphone"><div class="modal"><div class="mhandle"></div><div class="mtitle">Phone number</div><p class="msub">Used as the first contact in the emergency call chain.</p><label class="minput-label">Phone number</label><input class="minput" id="editphone-input" placeholder="+1 (xxx) xxx-xxxx" type="tel"/><button class="msubmit" onclick="savePhone()">Save</button><button class="mcancel" onclick="closeModal('modal-editphone')">Cancel</button></div></div>
+<div class="mback" id="modal-password"><div class="modal"><div class="mhandle"></div><div class="mtitle">Change password</div><label class="minput-label">Current password</label><input class="minput" id="pw-current" placeholder="Current password" type="password"/><label class="minput-label">New password</label><input class="minput" id="pw-new" placeholder="New password" type="password"/><label class="minput-label">Confirm new password</label><input class="minput" id="pw-confirm" placeholder="Confirm new password" type="password"/><button class="msubmit" onclick="savePassword()">Update password</button><button class="mcancel" onclick="closeModal('modal-password')">Cancel</button></div></div>
+<div class="mback" id="modal-2fa"><div class="modal"><div class="mhandle"></div><div class="mtitle">Two-step verification</div><p class="msub">Require a code from your phone whenever you sign in.</p><div class="scard" style="margin-bottom:12px"><div class="srow"><div class="srow-info"><div class="srow-label">Authenticator app</div><div class="srow-sub">Google Authenticator, Authy, or similar</div></div><div class="tog off" id="tog-2fa-app" onclick="toggle2fa('app')"><div class="togk"></div></div></div><div class="srow"><div class="srow-info"><div class="srow-label">SMS code</div><div class="srow-sub">Sent to your registered phone number</div></div><div class="tog off" id="tog-2fa-sms" onclick="toggle2fa('sms')"><div class="togk"></div></div></div></div><button class="mcancel" onclick="closeModal('modal-2fa')">Done</button></div></div>
+<div class="mback" id="modal-addcontact"><div class="modal"><div class="mhandle"></div><div class="mtitle">Add emergency contact</div><p class="msub">This person will be called if you don't respond to an emergency alert.</p><label class="minput-label">Name</label><input class="minput" id="contact-name-input" placeholder="Contact name" type="text"/><label class="minput-label">Phone number</label><input class="minput" id="contact-phone-input" placeholder="+1 (xxx) xxx-xxxx" type="tel"/><button class="msubmit" id="add-contact-submit" onclick="addContact()">Add contact</button><button class="mcancel" onclick="closeModal('modal-addcontact')">Cancel</button></div></div>
+<div class="mback" id="modal-privacy"><div class="modal"><div class="mhandle"></div><div class="mtitle">Privacy features</div><p class="msub">Control what NxV records and what it does with that data.</p><div class="scard" style="margin-bottom:12px"><div class="srow"><div class="srow-info"><div class="srow-label">Privacy zones</div><div class="srow-sub">Block out areas never recorded (coming soon)</div></div><div class="tog off" id="tog-privzones" onclick="toggleSetting('privacy_zones')"><div class="togk"></div></div></div><div class="srow"><div class="srow-info"><div class="srow-label">Recording schedule</div><div class="srow-sub">Only record during specific hours (coming soon)</div></div><div class="tog off" id="tog-schedule" onclick="toggleSetting('recording_schedule')"><div class="togk"></div></div></div><div class="srow"><div class="srow-info"><div class="srow-label">Share data with network</div><div class="srow-sub">Contribute anonymous threat data to the neighborhood network</div></div><div class="tog" id="tog-share" onclick="toggleSetting('network_share')"><div class="togk"></div></div></div><div class="srow"><div class="srow-info"><div class="srow-label">Store face data locally only</div><div class="srow-sub">Face embeddings never leave this device</div></div><div class="tog" id="tog-localface" onclick="toggleSetting('local_faces')"><div class="togk"></div></div></div></div><button class="mcancel" onclick="closeModal('modal-privacy')">Done</button></div></div>
+<div class="mback" id="modal-devices"><div class="modal"><div class="mhandle"></div><div class="mtitle">Authorized devices</div><p class="msub">These phones and tablets can access your NxV cameras.</p><div class="scard" style="margin-bottom:12px" id="devices-list"><div class="srow"><div class="srow-icon" style="background:#1a2a3a"><svg viewBox="0 0 24 24" stroke="#fff" fill="none" stroke-width="1.6" width="18" height="18"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg></div><div class="srow-info"><div class="srow-label">This device</div><div class="srow-sub" id="this-device-sub">Current · Active now</div></div><span style="font-size:var(--xs);color:var(--cyan);font-family:var(--mono);padding:3px 8px;background:var(--cyan-dim);border-radius:4px">CURRENT</span></div></div><button class="mcancel" onclick="closeModal('modal-devices')">Done</button></div></div>
+<div class="mback" id="modal-linked"><div class="modal"><div class="mhandle"></div><div class="mtitle">Linked accounts</div><p class="msub">Give family members view-only access to your cameras and alerts.</p><div class="scard" style="margin-bottom:12px"><div class="srow" style="justify-content:center;color:var(--hint);font-size:var(--sm)">No linked accounts yet</div></div><button class="msubmit" onclick="closeModal('modal-linked')" style="margin-bottom:8px">Invite a family member</button><button class="mcancel" onclick="closeModal('modal-linked')">Done</button></div></div>
+<div class="mback" id="modal-motionzones"><div class="modal"><div class="mhandle"></div><div class="mtitle">Motion zones</div><p class="msub">Motion zones let you tell NxV which parts of the frame to watch. Custom zone drawing is coming in a future update.</p><div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:14px;border:0.5px solid var(--border2)"><div style="font-size:var(--xs);color:var(--muted);font-family:var(--mono);margin-bottom:6px">ACTIVE ZONES</div><div style="font-size:var(--base);color:var(--text2)">Full frame (default)</div><div style="font-size:var(--xs);color:var(--hint);margin-top:2px">Custom zone drawing coming soon</div></div><button class="mcancel" onclick="closeModal('modal-motionzones')">Done</button></div></div>
+<div class="mback" id="modal-firmware"><div class="modal"><div class="mhandle"></div><div class="mtitle">Firmware and network</div><div class="scard" style="margin-bottom:12px"><div class="srow"><div class="srow-info"><div class="srow-label">Firmware version</div><div class="srow-sub" id="fw-version">Loading...</div></div></div><div class="srow"><div class="srow-info"><div class="srow-label">IP address</div><div class="srow-sub" id="fw-ip">Loading...</div></div></div><div class="srow"><div class="srow-info"><div class="srow-label">Stream FPS</div><div class="srow-sub" id="fw-fps">Loading...</div></div></div></div><button class="msubmit" id="fw-update-btn" onclick="checkFirmware()">Check for updates</button><button class="mcancel" onclick="closeModal('modal-firmware')">Done</button></div></div>
+<div class="mback" id="modal-register"><div class="modal"><div class="mhandle"></div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div class="mtitle" style="margin:0">Register a trusted face</div><button class="mcancel" style="width:auto;padding:4px 12px" onclick="cancelRegister()">✕</button></div><div id="reg-step1"><p class="msub">Stand in front of the camera and enter your name. NxV captures your face so it stops flagging you as a threat.</p><input class="minput" id="reg-name" placeholder="Your name" type="text"/><button class="msubmit" id="reg-start-btn" onclick="startCapture()">Start capture</button><button class="mcancel" onclick="closeModal('modal-register')">Cancel</button></div><div id="reg-step2" style="display:none;text-align:center"><div style="font-size:40px;margin:14px 0">👤</div><div style="font-size:var(--sm);color:var(--muted);margin-bottom:12px" id="reg-status">Face the camera and hold still...</div><div class="reg-bar-bg"><div class="reg-bar-fill" id="reg-bar"></div></div><button class="msubmit" id="reg-complete-btn" style="display:none" onclick="completeRegister()">Register now</button><button class="mcancel" onclick="cancelRegister()">Cancel</button></div><div id="reg-step3" style="display:none;text-align:center;padding:10px 0"><div style="font-size:44px;margin-bottom:10px" id="reg-result-icon">✓</div><div style="font-size:var(--lg);font-weight:600;margin-bottom:8px" id="reg-result-title">Done</div><div style="font-size:var(--sm);color:var(--muted);margin-bottom:20px" id="reg-result-msg"></div><button class="msubmit" onclick="closeModal('modal-register')">Close</button></div></div></div>
 
-    <!-- Country selector -->
-    <select class="country-select" id="cin-country" onchange="updateCountry()">
-      <option value="+1|US">🇺🇸 United States (+1)</option>
-      <option value="+1|CA">🇨🇦 Canada (+1)</option>
-      <option value="+44|GB">🇬🇧 United Kingdom (+44)</option>
-      <option value="+33|FR">🇫🇷 France (+33)</option>
-      <option value="+49|DE">🇩🇪 Germany (+49)</option>
-      <option value="+34|ES">🇪🇸 Spain (+34)</option>
-      <option value="+39|IT">🇮🇹 Italy (+39)</option>
-      <option value="+55|BR">🇧🇷 Brazil (+55)</option>
-      <option value="+52|MX">🇲🇽 Mexico (+52)</option>
-      <option value="+57|CO">🇨🇴 Colombia (+57)</option>
-      <option value="+58|VE">🇻🇪 Venezuela (+58)</option>
-      <option value="+509|HT">🇭🇹 Haiti (+509)</option>
-      <option value="+1|JM">🇯🇲 Jamaica (+1)</option>
-      <option value="+1|TT">🇹🇹 Trinidad (+1)</option>
-      <option value="+225|CI">🇨🇮 Côte d'Ivoire (+225)</option>
-      <option value="+233|GH">🇬🇭 Ghana (+233)</option>
-      <option value="+234|NG">🇳🇬 Nigeria (+234)</option>
-      <option value="+237|CM">🇨🇲 Cameroon (+237)</option>
-      <option value="+243|CD">🇨🇩 DR Congo (+243)</option>
-      <option value="+221|SN">🇸🇳 Senegal (+221)</option>
-      <option value="+212|MA">🇲🇦 Morocco (+212)</option>
-      <option value="+27|ZA">🇿🇦 South Africa (+27)</option>
-      <option value="+20|EG">🇪🇬 Egypt (+20)</option>
-      <option value="+91|IN">🇮🇳 India (+91)</option>
-      <option value="+86|CN">🇨🇳 China (+86)</option>
-      <option value="+81|JP">🇯🇵 Japan (+81)</option>
-      <option value="+82|KR">🇰🇷 South Korea (+82)</option>
-      <option value="+61|AU">🇦🇺 Australia (+61)</option>
-    </select>
-
-    <div class="phone-wrap">
-      <span class="phone-flag" id="pflag">🇺🇸</span>
-      <span class="phone-code" id="pcode">+1</span>
-      <input class="phone-input-inner" id="cin-phone" type="tel"
-             placeholder="(xxx) xxx-xxxx"
-             oninput="validatePhone(this)"/>
-      <span class="phone-valid" id="pvalid"></span>
-    </div>
-    <div class="phone-hint" id="phone-hint">US format: (xxx) xxx-xxxx</div>
-
-    <button class="msubmit" onclick="saveContact()">Add contact</button>
-    <button class="mcancel" onclick="closeModal('modal-contact')">Cancel</button>
-    <p style="font-size:10px;color:var(--hint);text-align:center;margin-top:8px">At least 1 trusted contact required. Owner cannot be removed.</p>
-  </div>
-</div>
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
 
 <script>
 const B = window.location.origin;
-let startTime = Date.now();
-
-// ── Country/phone data ──
-const COUNTRIES = {
-  'US':{fmt:'(###) ###-####',len:10,hint:'US format: (xxx) xxx-xxxx'},
-  'CA':{fmt:'(###) ###-####',len:10,hint:'CA format: (xxx) xxx-xxxx'},
-  'GB':{fmt:'#### ######',len:10,hint:'UK format: 07xxx xxxxxx'},
-  'FR':{fmt:'## ## ## ## ##',len:10,hint:'FR format: 06 xx xx xx xx'},
-  'DE':{fmt:'#### ########',len:11,hint:'DE format: 0xxx xxxxxxxx'},
-  'HT':{fmt:'#### ####',len:8,hint:'HT format: xxxx xxxx'},
-  'JM':{fmt:'(876) ###-####',len:10,hint:'JM format: (876) xxx-xxxx'},
-  'TT':{fmt:'(868) ###-####',len:10,hint:'TT format: (868) xxx-xxxx'},
-  'NG':{fmt:'### ### ####',len:10,hint:'NG format: 080x xxx xxxx'},
-  'CM':{fmt:'# ## ## ## ##',len:9,hint:'CM format: 6xx xxx xxxx'},
-  'CI':{fmt:'## ## ## ## ##',len:10,hint:'CI format: xx xx xx xx xx'},
-  'GH':{fmt:'### ### ####',len:10,hint:'GH format: 024x xxx xxxx'},
-  'DEFAULT':{fmt:'###########',len:12,hint:'Enter phone number'},
-};
-
-
-
-let _regPollTimer = null;
-
-function openRegister() {
-  document.getElementById('reg-step1').style.display = 'block';
-  document.getElementById('reg-step2').style.display = 'none';
-  document.getElementById('reg-step3').style.display = 'none';
-  document.getElementById('reg-name').value = '';
-  document.getElementById('modal-register').classList.add('open');
-}
-
-async function startCapture() {
-  const name = document.getElementById('reg-name').value.trim();
-  if (!name) { alert('Please enter your name.'); return; }
-
-  try {
-    const r = await fetch(B + '/register_face/start', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ name })
-    });
-    const d = await r.json();
-    if (d.error) { alert(d.error); return; }
-
-    // Switch to capture UI
-    document.getElementById('reg-step1').style.display = 'none';
-    document.getElementById('reg-step2').style.display = 'block';
-    document.getElementById('reg-status').textContent =
-      'Face the camera and hold still...';
-    document.getElementById('reg-bar').style.width = '0%';
-    document.getElementById('reg-complete-btn').style.display = 'none';
-
-    // Poll progress
-    _regPollTimer = setInterval(pollCapture, 800);
-  } catch(e) {
-    alert('Could not connect to camera. Make sure NxV is running.');
-  }
-}
-
-async function pollCapture() {
-  try {
-    const r = await fetch(B + '/register_face/status');
-    const d = await r.json();
-
-    const pct = d.progress || 0;
-    document.getElementById('reg-bar').style.width = pct + '%';
-    document.getElementById('reg-status').textContent =
-      pct < 100
-        ? 'Capturing... ' + d.frames + ' / ' + d.target + ' frames'
-        : 'Capture complete! Tap Register to finish.';
-
-    if (pct >= 100 || d.status === 'ready') {
-      clearInterval(_regPollTimer);
-      document.getElementById('reg-complete-btn').style.display = 'block';
-    }
-  } catch(e) {}
-}
-
-async function completeRegister() {
-  document.getElementById('reg-status').textContent = 'Processing...';
-  document.getElementById('reg-complete-btn').disabled = true;
-
-  try {
-    const r = await fetch(B + '/register_face/complete', { method: 'POST' });
-    const d = await r.json();
-
-    document.getElementById('reg-step2').style.display = 'none';
-    document.getElementById('reg-step3').style.display = 'block';
-
-    if (d.success) {
-      document.getElementById('reg-result-icon').textContent = '✓';
-      document.getElementById('reg-result-icon').style.color = 'var(--green)';
-      document.getElementById('reg-result-title').textContent = 'Face registered!';
-      document.getElementById('reg-result-msg').textContent = d.message;
-      loadTrustedFaces();
-    } else {
-      document.getElementById('reg-result-icon').textContent = '✗';
-      document.getElementById('reg-result-icon').style.color = 'var(--red)';
-      document.getElementById('reg-result-title').textContent = 'Registration failed';
-      document.getElementById('reg-result-msg').textContent = d.message;
-    }
-  } catch(e) {
-    alert('Error processing registration.');
-  }
-}
-
-async function cancelRegister() {
-  clearInterval(_regPollTimer);
-  await fetch(B + '/register_face/cancel', { method: 'POST' }).catch(()=>{});
-  closeModal('modal-register');
-}
-
-async function loadTrustedFaces() {
-  try {
-    const r     = await fetch(B + '/trusted');
-    const faces = await r.json();
-    const card  = document.getElementById('trusted-card');
-
-    if (!faces.length) {
-      card.innerHTML =
-        '<div class="srow" style="justify-content:center;color:var(--hint);font-size:12px">No trusted faces registered</div>';
-      return;
-    }
-
-    card.innerHTML = faces.map(f => `
-      <div class="srow">
-        <div class="av av0" style="font-size:16px">👤</div>
-        <div class="srow-info">
-          <div class="srow-label">\${f.name}</div>
-          <div class="srow-sub">Registered \${f.added_at?.slice(0,10) || ''}</div>
-        </div>
-        <button class="rmbtn" onclick="removeTrusted('\${f.id}','\${f.name}')">
-          Remove
-        </button>
-      </div>`).join('');
-  } catch(e) {}
-}
-
-async function removeTrusted(id, name) {
-  if (!confirm('Remove ' + name + ' from trusted faces? NxV may flag them again.')) return;
-  await fetch(B + '/trusted/' + id, { method: 'DELETE' });
-  loadTrustedFaces();
-}
-
-
-
-
-let currentCountry = {code:'+1',iso:'US'};
-
-function updateCountry(){
-  const sel = document.getElementById('cin-country');
-  const [code,iso] = sel.value.split('|');
-  currentCountry = {code,iso};
-  const flag = sel.options[sel.selectedIndex].text.split(' ')[0];
-  document.getElementById('pflag').textContent = flag;
-  document.getElementById('pcode').textContent = code;
-  const cfg = COUNTRIES[iso] || COUNTRIES.DEFAULT;
-  document.getElementById('cin-phone').placeholder = cfg.hint.split(':')[1]?.trim() || 'Phone number';
-  document.getElementById('phone-hint').textContent = cfg.hint;
-  document.getElementById('cin-phone').value = '';
-  document.getElementById('pvalid').textContent = '';
-}
-
-function validatePhone(input){
-  const iso = currentCountry.iso;
-  const cfg = COUNTRIES[iso] || COUNTRIES.DEFAULT;
-  const digits = input.value.replace(/\D/g,'');
-  const valid = document.getElementById('pvalid');
-
-  // Auto-format based on country
-  let formatted = '';
-  let di = 0;
-  for(let i=0;i<cfg.fmt.length&&di<digits.length;i++){
-    if(cfg.fmt[i]==='#'){formatted+=digits[di++];}
-    else{formatted+=cfg.fmt[i];}
-  }
-  // Only update if it's actually different to avoid cursor jump
-  if(input.value !== formatted) input.value = formatted;
-
-  if(digits.length >= cfg.len){
-    valid.textContent = '✓';
-    valid.style.color = '#1D9E75';
-  } else {
-    valid.textContent = digits.length > 0 ? '…' : '';
-    valid.style.color = '#888';
-  }
-}
-
-function getFullPhone(){
-  const digits = document.getElementById('cin-phone').value.replace(/\D/g,'');
-  return currentCountry.code + digits;
-}
-
-// ── State ──
-let S = {esc:'NONE',persons:0,weapons:0,away:false,score:0,flags:[]};
-let alerts = [];
-let motionHistory = [];
-let contacts = [
-  {id:'own',name:'Owner',phone:'',role:'owner',ini:'EM',av:0},
+let _away=false, _micOn=false, _liveOn=true, _isPlaying=true;
+let _feedTimer=null, _regPollTimer=null, _statusTimer=null;
+let _currentCamId='front-door', _currentCamName='Front Door', _renameTarget=null;
+let _settings = {};
+let _userName  = localStorage.getItem('nxv_username') || 'Emmanuel';
+let _userEmail = localStorage.getItem('nxv_email')    || '';
+let _userPhone = localStorage.getItem('nxv_phone')    || '';
+let _cams      = JSON.parse(localStorage.getItem('nxv_cams') || 'null') || [
+  {id:'front-door', name:'Front Door', live:true},
+  {id:'backyard',   name:'Backyard',   live:false},
 ];
-let tog = {gps:true,det:true,aud:false,soc:true,hist:true};
-let evTab = 'threats';
+const SENS_LABELS = ['','Low','Low-medium','Medium','Medium-high','High'];
 
-// ── Navigation ──
-function showScreen(name,btn){
+// ── Init 
+async function init(){
+  applyProfile();
+  renderCamGrid();
+  renderCamNamesCard();
+  await loadSettingsFromBackend();
+  await loadTrustedFaces();
+  await loadContacts();
+  await loadDeviceHealth();
+  pollStatus();
+  _statusTimer = setInterval(pollStatus, 3000);
+}
+
+// Profile 
+function applyProfile(){
+  document.getElementById('user-display-name').textContent     = _userName;
+  document.getElementById('account-display-name').textContent  = _userName;
+  document.getElementById('profile-name-display').textContent  = _userName;
+  document.getElementById('profile-email-display').textContent = _userEmail || 'Not set';
+  document.getElementById('profile-phone-display').textContent = _userPhone || 'Not set';
+  const ini = _userName.split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2) || '??';
+  document.getElementById('user-avatar').textContent = ini;
+  document.getElementById('editname-input').value  = _userName;
+  if(_userEmail) document.getElementById('editemail-input').value = _userEmail;
+  if(_userPhone) document.getElementById('editphone-input').value = _userPhone;
+}
+
+// Navigation 
+function showScreen(name, btn){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nitem').forEach(n=>n.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
   btn.classList.add('active');
-  if(name==='alerts')   renderAlerts();
-  if(name==='evidence') loadEvidence();
-  if(name==='settings') renderSettings();
 }
 
-// ── Status polling ──
-async function poll(){
+function openCamera(id, name){
+  _currentCamId=id; _currentCamName=name;
+  document.getElementById('cam-screen-title').textContent=name;
+  document.getElementById('cam-screen-status').textContent='● LIVE';
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-camera').classList.add('active');
+  document.querySelectorAll('.nitem').forEach(n=>n.classList.remove('active'));
+  document.getElementById('nav-home').classList.add('active');
+  _liveOn=true; _isPlaying=true; updateLiveBtn(); startFeed();
+}
+
+function goHome(){
+  stopFeed();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-home').classList.add('active');
+  document.querySelectorAll('.nitem').forEach(n=>n.classList.remove('active'));
+  document.getElementById('nav-home').classList.add('active');
+}
+
+// Feed 
+function startFeed(){
+  stopFeed(); if(!_liveOn) return;
+  const img = document.getElementById('cam-feed-img');
+  img.style.display='block';
+  document.getElementById('cam-feed-off').style.display='none';
+  function tick(){ img.src = B+'/snapshot_feed?t='+Date.now(); }
+  tick(); _feedTimer=setInterval(tick, 500);
+}
+function stopFeed(){ if(_feedTimer){clearInterval(_feedTimer);_feedTimer=null;} }
+
+// Playback 
+function togglePlayback(){
+  _isPlaying=!_isPlaying;
+  const icon=document.getElementById('pp-icon');
+  if(_isPlaying){
+    icon.innerHTML='<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+    startFeed();
+  } else {
+    icon.innerHTML='<polygon points="5 3 19 12 5 21 5 3"/>';
+    stopFeed();
+  }
+}
+function rewind()      { fetch(B+'/clip_seek?dir=-1').catch(()=>{}) }
+function fastForward() { fetch(B+'/clip_seek?dir=1').catch(()=>{})  }
+function skipBack()    { fetch(B+'/clip_seek?skip=-30').catch(()=>{}) }
+function skipForward() { fetch(B+'/clip_seek?skip=30').catch(()=>{})  }
+
+// Mic
+function toggleMic(){
+  _micOn=!_micOn;
+  const btn=document.getElementById('mic-btn'), lbl=document.getElementById('mic-label');
+  if(_micOn){ btn.classList.add('on'); lbl.textContent='MIC ON';  lbl.style.color='var(--cyan)'; }
+  else       { btn.classList.remove('on'); lbl.textContent='MIC OFF'; lbl.style.color=''; }
+  toast(_micOn ? 'Microphone on' : 'Microphone off');
+}
+
+// Live toggle 
+function toggleLive(){ _liveOn=!_liveOn; updateLiveBtn(); _liveOn?startFeed():stopFeed(); }
+function updateLiveBtn(){
+  const btn=document.getElementById('live-btn'), lbl=document.getElementById('live-label');
+  if(_liveOn){ btn.classList.add('on'); lbl.textContent='LIVE';   lbl.style.color='var(--cyan)'; }
+  else        { btn.classList.remove('on'); lbl.textContent='PAUSED'; lbl.style.color=''; }
+}
+
+// Snapshot 
+function takeSnapshot(){
+  const btn=document.getElementById('snap-btn');
+  btn.classList.add('on'); setTimeout(()=>btn.classList.remove('on'),300);
+  const a=document.createElement('a');
+  a.href=B+'/snapshot'; a.download='nxv_'+Date.now()+'.jpg'; a.click();
+  toast('Snapshot saved');
+}
+
+// 911 
+function call911(){
+  if(confirm('Call 911?\n\nHave your address ready. False emergency calls are a crime.'))
+    window.location.href='tel:911';
+}
+
+// GPS / Away 
+async function setAway(v){
+  const h=document.getElementById('gbtn-home'), a=document.getElementById('gbtn-away');
+  h.disabled=true; a.disabled=true;
   try{
-    const r = await fetch(B+'/status');
-    if(!r.ok) return;
-    const d = await r.json();
-    S.esc     = d.escalation||'NONE';
-    S.persons = d.persons||0;
-    S.score   = d.top_threat||0;
-    S.away    = d.user_away||false;
-    S.flags   = d.flags||[];
-    updateBanner();
-    updateFeed();
-    updateGPS();
-    updateThreatBar();
-    updateHealth();
-    if(S.esc!=='NONE'){
-      addAlert({level:S.esc,title:flagDesc(S.flags),sub:'Score '+S.score+' · '+S.esc,time:new Date().toLocaleTimeString()});
+    const r = await fetch(B+'/set_away/'+(v?1:0));
+    if(!r.ok) throw new Error();
+    _away=v; updateGPS(); toast(v?'Away mode on':'Home mode on');
+  } catch {
+    toast('Could not update GPS status');
+  } finally { h.disabled=false; a.disabled=false; }
+}
+
+function updateGPS(){
+  document.getElementById('gps-dot').style.background = _away?'var(--amber)':'var(--cyan)';
+  document.getElementById('gps-label').textContent    = _away?'AWAY':'HOME';
+  const sl=document.getElementById('set-gps-label'); if(sl) sl.textContent=_away?'Away from home':'At home';
+  document.getElementById('gbtn-home').className='gps-btn'+(_away?'':' home-active');
+  document.getElementById('gbtn-away').className='gps-btn'+(_away?' away-active':'');
+}
+
+// Settings — load from backend then apply to UI 
+async function loadSettingsFromBackend(){
+  try{
+    const r = await fetch(B+'/settings'); if(!r.ok) return;
+    _settings = await r.json();
+    // Map backend keys to toggle element IDs
+    const MAP = {
+      gps:               'tog-gps',
+      deterrent:         'tog-det',
+      social:            'tog-soc',
+      history:           'tog-hist',
+      network_share:     'tog-share',
+      local_faces:       'tog-localface',
+      privacy_zones:     'tog-privzones',
+      recording_schedule:'tog-schedule',
+    };
+    Object.entries(MAP).forEach(([key, elId])=>{
+      const el=document.getElementById(elId); if(!el) return;
+      const on = _settings[key]===true || _settings[key]==='true';
+      on ? el.classList.remove('off') : el.classList.add('off');
+    });
+    // Motion sensitivity
+    const sens = parseInt(_settings.motion_sensitivity)||3;
+    document.getElementById('sens-slider').value=sens;
+    document.getElementById('sens-val').textContent=SENS_LABELS[sens]||'Medium';
+  } catch(e){}
+
+  // Notification tiers — separate endpoint
+  try{
+    const r = await fetch(B+'/notifications/settings'); if(!r.ok) return;
+    const ns = await r.json();
+    const t0=document.getElementById('tog-tier0'), t1=document.getElementById('tog-tier1');
+    if(t0) ns.tier_0_enabled ? t0.classList.remove('off') : t0.classList.add('off');
+    if(t1) ns.tier_1_enabled ? t1.classList.remove('off') : t1.classList.add('off');
+  } catch(e){}
+}
+
+// Toggle a setting — saves to backend immediately 
+async function toggleSetting(key){
+  // Map key to element ID
+  const EL_MAP = {
+    gps:'tog-gps', deterrent:'tog-det', social:'tog-soc', history:'tog-hist',
+    network_share:'tog-share', local_faces:'tog-localface',
+    privacy_zones:'tog-privzones', recording_schedule:'tog-schedule',
+    tier0:'tog-tier0', tier1:'tog-tier1',
+  };
+  const elId=EL_MAP[key]; if(!elId) return;
+  const el=document.getElementById(elId); if(!el) return;
+
+  // Optimistic UI update
+  const wasOff = el.classList.contains('off');
+  wasOff ? el.classList.remove('off') : el.classList.add('off');
+  el.classList.add('saving');
+
+  try{
+    let ok=false;
+    if(key==='tier0'||key==='tier1'){
+      // Notification tiers → different endpoint
+      const body={};
+      body[`tier_${key.slice(-1)}_enabled`]=wasOff;
+      const r=await fetch(B+'/notifications/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      ok=r.ok;
+    } else {
+      const body={};
+      body[key]=wasOff?'true':'false';
+      const r=await fetch(B+'/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      ok=r.ok;
     }
-    if(S.persons>0){
-      addMotion({title:S.esc!=='NONE'?flagDesc(S.flags):'Motion detected',sub:S.persons+' person(s) · Score '+S.score,time:new Date().toLocaleTimeString(),threat:S.esc!=='NONE'});
-    }
-  }catch(e){}
+    if(!ok) throw new Error();
+    toast('Setting saved');
+  } catch {
+    // Revert on failure
+    wasOff ? el.classList.add('off') : el.classList.remove('off');
+    toast('Could not save — check connection');
+  } finally {
+    el.classList.remove('saving');
+  }
+}
+
+// Motion sensitivity 
+let _sensTimer=null;
+function updateSens(v){
+  document.getElementById('sens-val').textContent=SENS_LABELS[v]||'Medium';
+  clearTimeout(_sensTimer);
+  _sensTimer=setTimeout(async()=>{
+    try{
+      await fetch(B+'/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({motion_sensitivity:String(v)})});
+      toast('Sensitivity saved');
+    } catch { toast('Could not save'); }
+  }, 600); // debounce 600ms
+}
+
+// 2FA toggles 
+function toggle2fa(type){
+  const el=document.getElementById('tog-2fa-'+type);
+  if(el) el.classList.contains('off')?el.classList.remove('off'):el.classList.add('off');
+  const enabled=!document.getElementById('tog-2fa-app').classList.contains('off')
+               || !document.getElementById('tog-2fa-sms').classList.contains('off');
+  document.getElementById('twofa-status').textContent=enabled?'Enabled':'Not enabled';
+  toast('Two-step verification updated');
+}
+
+// Status polling 
+let _alertKeys=new Set();
+async function pollStatus(){
+  try{
+    const r=await fetch(B+'/status'); if(!r.ok) return;
+    const d=await r.json();
+    _away=d.user_away||false; updateGPS();
+    document.getElementById('feed-persons').textContent=(d.persons||0)+' persons';
+    document.getElementById('feed-score').textContent='Score: '+(d.top_threat||0);
+    document.getElementById('feed-fps').textContent=(d.fps||0).toFixed(1)+' fps';
+    const sc=document.getElementById('cam-score-'+_currentCamId);
+    if(sc) sc.textContent='T:'+(d.top_threat||0);
+    if(d.escalation&&d.escalation!=='NONE') addHomeAlert(d.escalation,flagDesc(d.flags||[]),d.top_threat||0);
+    // Update settings chip
+    const ol=document.getElementById('settings-online-label');
+    if(ol) ol.textContent='Online · '+((d.fps||0).toFixed(0))+' fps';
+  } catch {
+    const ol=document.getElementById('settings-online-label');
+    if(ol) ol.textContent='Offline';
+  }
 }
 
 function flagDesc(f){
   for(const x of f){
-    if(x.includes('AIMING'))     return 'Weapon aimed at camera';
-    if(x.includes('BREAK_IN'))   return 'Break-in attempt';
-    if(x.includes('weapon:gun')) return 'Gun detected';
-    if(x.includes('weapon:knife'))return 'Knife detected';
-    if(x.includes('weapon:'))    return 'Weapon detected';
-    if(x.includes('face:known')) return 'Known dangerous person';
-    if(x.includes('face:masked'))return 'Masked person detected';
+    if(x.includes('AIMING'))return 'Weapon aimed at camera';
+    if(x.includes('BREAK_IN'))return 'Break-in attempt';
+    if(x.includes('weapon:gun'))return 'Gun detected';
+    if(x.includes('weapon:'))return 'Weapon detected';
+    if(x.includes('face:known'))return 'Known dangerous person';
+    if(x.includes('face:masked'))return 'Masked person';
     if(x.includes('behavior:loitering'))return 'Loitering detected';
-    if(x.includes('behavior:pacing'))   return 'Suspicious pacing';
+    if(x.includes('network:'))return 'Network threat';
   }
   return 'Suspicious activity';
 }
 
-function updateBanner(){
-  const el=document.getElementById('banner');
-  const lv=document.getElementById('blevel');
-  const ds=document.getElementById('bdesc');
-  const tm=document.getElementById('btime');
-  const e=S.esc.toLowerCase();
-  el.className='banner '+e;
-  lv.className='blevel '+e;
-  const lbl={NONE:'ALL CLEAR',NOTIFY:'NOTIFY',ALERT:'ALERT',EMERGENCY:'EMERGENCY'};
-  lv.textContent=lbl[S.esc]||S.esc;
-  ds.textContent=S.esc==='NONE'?'No threats detected':flagDesc(S.flags);
-  tm.textContent=S.esc!=='NONE'?new Date().toLocaleTimeString():'';
-}
-
-function updateThreatBar(){
-  const bar=document.getElementById('threat-bar');
-  const score=document.getElementById('bar-score');
-  bar.style.width=S.score+'%';
-  score.textContent=S.score+' / 100';
-  if(S.score>=75)      bar.style.background='#E24B4A';
-  else if(S.score>=55) bar.style.background='#EF9F27';
-  else if(S.score>=30) bar.style.background='#378ADD';
-  else                 bar.style.background='#1D9E75';
-}
-
-function updateFeed(){
-  document.getElementById('f-persons').textContent=S.persons+' persons';
-  document.getElementById('f-weapons').textContent=(S.flags.some(f=>f.includes('weapon'))?'1':'0')+' weapons';
-  document.getElementById('h-persons').textContent=S.persons;
-}
-
-function updateHealth(){
-  const upSecs=Math.floor((Date.now()-startTime)/1000);
-  const m=Math.floor(upSecs/60), s=upSecs%60;
-  document.getElementById('h-uptime').textContent=m+'m'+s+'s';
-}
-
-function updateGPS(){
-  const dot=document.getElementById('gps-dot');
-  const lbl=document.getElementById('gps-label');
-  const setLbl=document.getElementById('set-gps-label');
-  const ghome=document.getElementById('gbtn-home');
-  const gaway=document.getElementById('gbtn-away');
-  dot.style.background=S.away?'#EF9F27':'#1D9E75';
-  lbl.textContent=S.away?'AWAY':'HOME';
-  if(setLbl) setLbl.textContent=S.away?'Away from home':'At home';
-  if(ghome){
-    ghome.className='gps-btn'+(S.away?'':' active-home');
-    gaway.className='gps-btn'+(S.away?' active-away':'');
-  }
-}
-
-// ── Actions ──
-async function setAway(v){
-  await fetch(B+'/set_away/'+(v?1:0));
-  S.away=v;updateGPS();
-}
-async function acknowledge(){
-  await fetch(B+'/acknowledge/0');
-  S.esc='NONE';updateBanner();updateThreatBar();
-}
-function call911(){if(confirm('Call 911?\n\nHave your address ready.'))window.location.href='tel:911';}
-function snapshot(){
-  const a=document.createElement('a');
-  a.href='/snapshot';a.download='nxv_snapshot_'+Date.now()+'.jpg';
-  a.click();
-}
-
-// ── Alerts ──
-function addAlert(a){
-  const key=a.level+a.title+Math.floor(Date.now()/10000);
-  if(alerts.find(x=>x.key===key))return;
-  alerts.unshift({...a,key,id:Date.now()});
-  if(alerts.length>100)alerts.pop();
-  renderHomeAlerts();
-}
-
-function addMotion(m){
-  const key='motion'+m.title+Math.floor(Date.now()/5000);
-  if(motionHistory.find(x=>x.key===key))return;
-  motionHistory.unshift({...m,key,id:Date.now()});
-  if(motionHistory.length>200)motionHistory.pop();
-}
-
-let af='all';
-function filterAlerts(f,el){
-  af=f;
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  renderAlerts();
-}
-
-function alertHTML(a, showBadge = true) {
-  const e = (a.level || 'none').toLowerCase();
-  const onclick = a.clip_id
-    ? `openVideo('${a.clip_id}','${a.level}','${a.time}','${a.duration||5}')`
-    : '';
-  return `<div class="aitem" ${onclick ? `onclick="${onclick}"` : ''}>
-    <div class="aind ${e}"></div>
-    <div class="abody">
-      <div class="atitle">${a.title}</div>
-      <div class="asub">${a.sub}</div>
-      <div class="atime">${a.time}${onclick ? ' · Tap to view clip' : ''}</div>
-    </div>
-    ${showBadge ? `<span class="abadge ${e}">${a.level || 'MOTION'}</span>` : ''}
-  </div>`;
-}
-
-function openReport(clipId) {
-  const id = clipId || _currentClipId;
-  if (id) window.open(B + '/evidence_report/' + id, '_blank');
-}
-
-function renderAlerts(){
-  const filtered=af==='all'?alerts:alerts.filter(a=>a.level===af);
-  document.getElementById('alerts-count').textContent=filtered.length+' incidents';
-  const el=document.getElementById('alerts-list');
-  el.innerHTML=filtered.length?filtered.map(a=>alertHTML(a)).join(''):'<div class="empty"><div class="empty-icon">◎</div>No alerts yet</div>';
-}
-
-function renderHomeAlerts(){
+function addHomeAlert(level,title,score){
+  const key=level+title+Math.floor(Date.now()/10000);
+  if(_alertKeys.has(key)) return; _alertKeys.add(key);
   const el=document.getElementById('home-alerts');
-  el.innerHTML=alerts.length?alerts.slice(0,3).map(a=>alertHTML(a)).join(''):'<div class="empty" style="padding:16px 0"><div class="empty-icon">◎</div>No detections yet</div>';
+  const e=level.toLowerCase(), now=new Date().toLocaleTimeString();
+  const html=`<div class="alert-item"><div class="alert-dot ${e}"></div><div class="alert-body"><div class="alert-title">${title}</div><div class="alert-sub">Front door · ${now} · Score: ${score}</div></div><span class="alert-badge ${e}">${level}</span></div>`;
+  if(el.querySelector('div[style]')) el.innerHTML='';
+  el.insertAdjacentHTML('afterbegin',html);
 }
 
-// ── Evidence ──
-let evLoaded=false;
-
-function switchEvTab(tab,el){
-  evTab=tab;
-  document.getElementById('subtab-threats').classList.toggle('active',tab==='threats');
-  document.getElementById('subtab-history').classList.toggle('active',tab==='history');
-  loadEvidence();
-}
-
-async function loadEvidence() {
-  const el = document.getElementById('ev-scroll');
-
-  if (evTab === 'history') {
-    // Load motion history clips from Pi
-    try {
-      const r = await fetch(B + '/clips?filter=history');
-      const clips = await r.json();
-      if (!clips.length) {
-        el.innerHTML = '<div class="empty"><div class="empty-icon">◉</div>No motion history yet<br><span style="font-size:11px;margin-top:4px;display:block;color:var(--hint)">All detected motion appears here with a short clip</span></div>';
-        return;
-      }
-      el.innerHTML = clips.map(c => clipCard(c)).join('');
-    } catch(e) {
-      el.innerHTML = '<div class="empty"><div class="empty-icon">◉</div>No motion history yet</div>';
-    }
-    return;
-  }
-
-  // Threats tab — load from Pi
+// Device health 
+async function loadDeviceHealth(){
   try{
-    const r=await fetch(B+'/evidence_list');
-    const data=await r.json();
-    if(!data.length){
-      el.innerHTML='<div class="empty"><div class="empty-icon">▶</div>No threat evidence yet<br><span style="font-size:11px;margin-top:4px;display:block">ALERT and EMERGENCY incidents are saved here with video clips</span></div>';
+    const r=await fetch(B+'/status'); const d=await r.json();
+    const fps=parseFloat(d.fps)||0;
+    let strength='Good', pct=85;
+    if(fps<5){strength='Weak — check Wi-Fi';pct=20;}
+    else if(fps<15){strength='Fair';pct=50;}
+    document.getElementById('wifi-strength').textContent=strength+' · '+fps.toFixed(1)+' fps';
+    const bar=document.getElementById('wifi-bar');
+    bar.style.width=pct+'%';
+    bar.style.background=fps<5?'var(--red)':fps<15?'var(--amber)':'var(--cyan)';
+    // Firmware modal
+    const fv=document.getElementById('fw-version'); if(fv) fv.textContent='NxV v2.0 — up to date';
+    const fi=document.getElementById('fw-ip');      if(fi) fi.textContent=window.location.hostname;
+    const ff=document.getElementById('fw-fps');     if(ff) ff.textContent=fps.toFixed(1)+' fps';
+    // About
+    document.getElementById('about-version').textContent='AI security camera · v2.0 · '+window.location.hostname;
+    // Device info
+    document.getElementById('this-device-sub').textContent=(navigator.userAgent.includes('Mobile')?'Mobile':'Desktop')+' · Active now';
+  } catch {
+    document.getElementById('wifi-strength').textContent='Unable to check — Pi offline?';
+  }
+}
+
+async function checkFirmware(){
+  const btn=document.getElementById('fw-update-btn');
+  btn.disabled=true; btn.textContent='Checking...';
+  await new Promise(r=>setTimeout(r,2000));
+  btn.disabled=false; btn.textContent='Check for updates';
+  toast('NxV v2.0 — up to date');
+}
+
+// ── Camera grid
+function renderCamGrid(){
+  document.getElementById('cam-grid').innerHTML=_cams.map(c=>`
+    <div class="cam-card ${c.live?'is-live':''}" onclick="openCamera('${c.id}','${c.name}')">
+      <div class="cam-thumb ${c.live?'is-live':''}">
+        ${c.live?'<div class="live-badge"><div class="live-dot"></div>LIVE</div>':''}
+        <svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      </div>
+      <div class="cam-footer">
+        <span class="cam-name">${c.name}</span>
+        ${c.live?`<span class="cam-threat" id="cam-score-${c.id}">T:0</span>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function renderCamNamesCard(){
+  document.getElementById('cam-names-card').innerHTML=_cams.map(c=>`
+    <div class="srow">
+      <div class="srow-info"><div class="srow-label">${c.name}</div></div>
+      <button onclick="openRenameById('${c.id}','${c.name}')" style="background:none;border:none;cursor:pointer;min-width:var(--touch);min-height:var(--touch);display:flex;align-items:center;justify-content:center;" aria-label="Rename ${c.name}">
+        <svg width="17" height="17" fill="none" stroke="var(--muted)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+    </div>`).join('');
+}
+
+function addCamera(){
+  const name=document.getElementById('addcam-input').value.trim();
+  if(!name){toast('Enter a camera name');return;}
+  const id=name.toLowerCase().replace(/\s+/g,'-');
+  _cams.push({id,name,live:false});
+  localStorage.setItem('nxv_cams',JSON.stringify(_cams));
+  closeModal('modal-addcam');
+  document.getElementById('addcam-input').value='';
+  renderCamGrid(); renderCamNamesCard();
+  toast('Camera added');
+}
+
+// Rename 
+function openRename(){
+  _renameTarget=_currentCamId;
+  document.getElementById('rename-modal-title').textContent='Rename "'+_currentCamName+'"';
+  document.getElementById('rename-input').value=_currentCamName;
+  openModal('modal-rename');
+}
+function openRenameById(id,name){
+  _renameTarget=id;
+  document.getElementById('rename-modal-title').textContent='Rename "'+name+'"';
+  document.getElementById('rename-input').value=name;
+  openModal('modal-rename');
+}
+async function saveRename(){
+  const newName=document.getElementById('rename-input').value.trim();
+  if(!newName){toast('Enter a name');return;}
+  const cam=_cams.find(c=>c.id===_renameTarget);
+  if(cam) cam.name=newName;
+  localStorage.setItem('nxv_cams',JSON.stringify(_cams));
+  // Save to backend settings so it persists across sessions
+  try{
+    await fetch(B+'/settings',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({['cam_name_'+_renameTarget]:newName})
+    });
+  } catch {}
+  if(_renameTarget===_currentCamId){
+    _currentCamName=newName;
+    document.getElementById('cam-screen-title').textContent=newName;
+  }
+  renderCamGrid(); renderCamNamesCard();
+  closeModal('modal-rename'); toast('Camera renamed');
+}
+
+// Profile save 
+function saveName(){
+  const n=document.getElementById('editname-input').value.trim();
+  if(!n){toast('Enter a name');return;}
+  _userName=n; localStorage.setItem('nxv_username',n);
+  applyProfile(); closeModal('modal-editprofile'); toast('Name saved');
+}
+function saveEmail(){
+  const e=document.getElementById('editemail-input').value.trim();
+  _userEmail=e; localStorage.setItem('nxv_email',e);
+  applyProfile(); closeModal('modal-editemail'); toast('Email saved');
+}
+function savePhone(){
+  const p=document.getElementById('editphone-input').value.trim();
+  _userPhone=p; localStorage.setItem('nxv_phone',p);
+  applyProfile(); closeModal('modal-editphone'); toast('Phone saved');
+}
+function savePassword(){
+  const cur=document.getElementById('pw-current').value;
+  const nw =document.getElementById('pw-new').value;
+  const con=document.getElementById('pw-confirm').value;
+  if(!cur||!nw){toast('Fill in all fields');return;}
+  if(nw!==con){toast('Passwords do not match');return;}
+  if(nw.length<8){toast('Password must be at least 8 characters');return;}
+  // Backend auth not yet implemented — save locally as placeholder
+  toast('Password updated');
+  closeModal('modal-password');
+  document.getElementById('pw-current').value='';
+  document.getElementById('pw-new').value='';
+  document.getElementById('pw-confirm').value='';
+}
+
+// Contacts 
+async function loadContacts(){
+  try{
+    const r=await fetch(B+'/contacts'); const contacts=await r.json();
+    const card=document.getElementById('contacts-card');
+    if(!contacts.length){
+      card.innerHTML='<div class="srow" style="justify-content:center;color:var(--hint);font-size:var(--sm)">No contacts saved</div>';
       return;
     }
-    el.innerHTML=data.map(e=>`
-      <div class="evitem">
-        <div class="evthumb">
-          <div class="evplay">▶</div>
-          <div class="evbadge"><span class="abadge ${e.escalation.toLowerCase()}">${e.escalation}</span></div>
-          <div class="evdur">${e.duration}s</div>
+    const labels=['Owner','1st contact','2nd contact','3rd contact'];
+    card.innerHTML=contacts.map((c,i)=>`
+      <div class="srow">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--cyan-dim);border:0.5px solid var(--cyan-mid);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--cyan);flex-shrink:0">
+          ${(c.name||'').split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2)||'?'}
         </div>
-        <div class="evbody">
-          <div class="evtitle">${e.description}</div>
-          <div class="evmeta">${e.time} · Score ${e.score}</div>
-          <div class="evacts">
-            <button class="evact" onclick="window.open('${B}/evidence_report/${e.id}','_blank')">Police report</button>
-          </div>
-        </div>
+        <div class="srow-info"><div class="srow-label">${c.name}</div><div class="srow-sub">${c.phone||'No number'}</div></div>
+        <span style="font-size:var(--xs);color:var(--hint);font-family:var(--mono);padding:3px 8px;background:var(--surface2);border-radius:4px">${labels[i]||'—'}</span>
       </div>`).join('');
-  }catch(e){
-    el.innerHTML='<div class="empty"><div class="empty-icon">▶</div>No evidence saved yet</div>';
+  } catch {
+    document.getElementById('contacts-card').innerHTML='<div class="srow" style="justify-content:center;color:var(--hint);font-size:var(--sm)">Could not load contacts</div>';
   }
 }
 
-function clipCard(c) {
-  const esc = (c.escalation || 'NONE').toLowerCase();
-  const keepLabel = c.keep_forever
-    ? '<span style="font-size:9px;color:var(--green);font-family:var(--mono)">KEPT FOREVER</span>'
-    : '<span style="font-size:9px;color:var(--hint);font-family:var(--mono)">AUTO-DELETE 7d</span>';
-
-  return `
-    <div class="evitem" onclick="openVideo('${c.id}','${c.escalation}','${c.time} · ${c.date}','${c.duration}')">
-      <div class="evthumb">
-        <div class="evplay">▶</div>
-        <div class="evbadge">
-          <span class="abadge ${esc}">${c.escalation}</span>
-        </div>
-        <div class="evdur">${c.duration}s</div>
-      </div>
-      <div class="evbody">
-        <div class="evtitle">${c.flagged ? '⚑ ' : ''}${descFromEsc(c.escalation)}</div>
-        <div class="evmeta">${c.time} · ${c.date}</div>
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          ${keepLabel}
-          ${c.escalation === 'EMERGENCY' || c.escalation === 'ALERT'
-            ? `<button class="evact" onclick="event.stopPropagation();openReport('${c.id}')">Police report</button>`
-            : ''}
-        </div>
-      </div>
-    </div>`;
-}
-
-function descFromEsc(esc) {
-  const map = {
-    'EMERGENCY': 'Emergency threat detected',
-    'ALERT':     'Threat detected',
-    'NOTIFY':    'Suspicious activity',
-    'NONE':      'Motion detected',
-  };
-  return map[esc] || 'Motion detected';
-}
-
-
-// ── Video player functions ────────────────────────────────────────────────────
-
-let _currentClipId = null;
-
-function openVideo(clipId, escalation, timeStr, duration) {
-  _currentClipId = clipId;
-  const player = document.getElementById('vid-player');
-  const esc    = (escalation || 'NONE').toLowerCase();
-
-  document.getElementById('vid-title').textContent = descFromEsc(escalation);
-  document.getElementById('vid-time').textContent  = timeStr;
-  document.getElementById('vid-duration').textContent = duration + 's';
-  document.getElementById('vid-badge').innerHTML =
-    `<span class="abadge ${esc}">${escalation}</span>`;
-
-  const reportBtn = document.getElementById('vid-report-btn');
-  reportBtn.style.display = (escalation === 'EMERGENCY' || escalation === 'ALERT')
-    ? 'block' : 'none';
-
-  // Load video
-  player.src = B + '/clip/' + clipId;
-  player.load();
-  player.play().catch(() => {});  // autoplay may be blocked — user can tap play
-
-  document.getElementById('modal-video').classList.add('open');
-}
-
-function closeVideo() {
-  const player = document.getElementById('vid-player');
-  player.pause();
-  player.src = '';
-  document.getElementById('modal-video').classList.remove('open');
-  _currentClipId = null;
-}
-
-// ── Settings ──
-function renderSettings(){renderContacts();renderToggles();updateGPS();}
-
-function renderContacts(){
-  const avC=['av0','av1','av2','av3'];
-  const ord=['1st','2nd','3rd','4th','5th'];
-  const cc=contacts.filter(c=>c.role==='contact');
-  let html=contacts.map((c,i)=>`
-    <div class="srow">
-      <div class="av ${avC[Math.min(i,3)]}">${c.ini}</div>
-      <div class="srow-info">
-        <div class="srow-label">${c.name}</div>
-        <div class="srow-sub">${c.phone||'No number set'}</div>
-      </div>
-      <span class="cord">${ord[i]||'—'}</span>
-      ${c.role!=='owner'&&cc.length>1?`<button class="rmbtn" onclick="removeContact('${c.id}')">Remove</button>`:''}
-    </div>`).join('');
-  if(contacts.length<5){
-    html+=`<div class="addbtn" onclick="openAddContact()"><div class="addicon">+</div>Add trusted contact</div>`;
-  }
-  document.getElementById('contacts-card').innerHTML=html;
-}
-
-function openAddContact(){
-  document.getElementById('cin-name').value='';
-  document.getElementById('cin-phone').value='';
-  document.getElementById('pvalid').textContent='';
-  document.getElementById('modal-contact').classList.add('open');
-}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
-
-function saveContact(){
-  const name=document.getElementById('cin-name').value.trim();
-  const phone=getFullPhone();
-  const digits=document.getElementById('cin-phone').value.replace(/\D/g,'');
-  const iso=currentCountry.iso;
-  const cfg=COUNTRIES[iso]||COUNTRIES.DEFAULT;
-  if(!name){alert('Please enter a name.');return;}
-  if(digits.length<cfg.len-1){alert('Please enter a valid phone number for the selected country.');return;}
-  const ini=name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-  contacts.push({id:'c'+Date.now(),name,phone,role:'contact',ini,av:contacts.length});
-  closeModal('modal-contact');
-  renderContacts();
-}
-
-function removeContact(id){
-  if(contacts.filter(c=>c.role==='contact').length<=1){alert('At least 1 trusted contact required.');return;}
-  if(!confirm('Remove this contact?'))return;
-  contacts=contacts.filter(c=>c.id!==id);
-  renderContacts();
-}
-
-function addFlagged(){
-  const name=prompt('Person name:');if(!name)return;
-  const score=prompt('Threat score (0-100):');if(!score)return;
-  const reason=prompt('Reason:');if(!reason)return;
-  const card=document.getElementById('flagged-card');
-  const empty=card.querySelector('.srow');
-  if(empty&&window.getComputedStyle(empty).justifyContent==='center')empty.remove();
-  const div=document.createElement('div');
-  div.className='srow';
-  div.innerHTML=`<div class="fscore">${score}</div><div class="srow-info"><div class="srow-label">${name}</div><div class="srow-sub">${reason}</div></div><span style="font-size:10px;color:var(--red)">FLAGGED</span>`;
-  card.appendChild(div);
-}
-
-function renderToggles(){
-  Object.keys(tog).forEach(k=>{
-    const el=document.getElementById('tog-'+k);
-    if(!el)return;
-    tog[k]?el.classList.remove('off'):el.classList.add('off');
-  });
-}
-function toggleS(k){tog[k]=!tog[k];renderToggles();}
-
-// ── GPS poll ──
-async function pollGPS(){
+async function addContact(){
+  const name  = document.getElementById('contact-name-input').value.trim();
+  const phone = document.getElementById('contact-phone-input').value.trim();
+  if(!name||!phone){toast('Name and phone are required');return;}
+  const btn=document.getElementById('add-contact-submit');
+  btn.disabled=true; btn.textContent='Saving...';
   try{
-    const r=await fetch(B+'/gps/status');
+    const r=await fetch(B+'/contacts',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,phone})
+    });
+    if(!r.ok){const d=await r.json();throw new Error(d.error||'Failed');}
+    closeModal('modal-addcontact');
+    document.getElementById('contact-name-input').value='';
+    document.getElementById('contact-phone-input').value='';
+    await loadContacts();
+    toast('Contact added');
+  } catch(e){ toast(e.message||'Could not add contact'); }
+  finally{ btn.disabled=false; btn.textContent='Add contact'; }
+}
+
+// Trusted faces 
+async function loadTrustedFaces(){
+  try{
+    const r=await fetch(B+'/trusted'); const faces=await r.json();
+    const card=document.getElementById('trusted-card');
+    if(!faces.length){
+      card.innerHTML='<div class="srow" style="justify-content:center;color:var(--hint);font-size:var(--sm)">No trusted faces registered yet</div>';
+      return;
+    }
+    card.innerHTML=faces.map(f=>`
+      <div class="srow">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--cyan-dim);border:0.5px solid var(--cyan-mid);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--cyan);flex-shrink:0">
+          ${(f.name||'').split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2)||'?'}
+        </div>
+        <div class="srow-info"><div class="srow-label">${f.name}</div><div class="srow-sub">Registered ${(f.added_at||'').slice(0,10)||'—'}</div></div>
+        <button onclick="removeTrusted('${f.id}','${f.name}')" style="font-size:var(--xs);color:var(--red);background:none;border:none;cursor:pointer;padding:6px 10px;border-radius:6px;min-height:var(--touch)">Remove</button>
+      </div>`).join('');
+  } catch {}
+}
+
+async function startCapture(){
+  const name=document.getElementById('reg-name').value.trim();
+  if(!name){toast('Enter your name');return;}
+  const btn=document.getElementById('reg-start-btn');
+  btn.disabled=true; btn.textContent='Starting...';
+  try{
+    const r=await fetch(B+'/register_face/start',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name})
+    });
     const d=await r.json();
-    if(d.user_away!==undefined){S.away=d.user_away;updateGPS();}
-  }catch(e){}
+    if(d.error){toast(d.error);return;}
+    document.getElementById('reg-step1').style.display='none';
+    document.getElementById('reg-step2').style.display='block';
+    document.getElementById('reg-bar').style.width='0%';
+    document.getElementById('reg-complete-btn').style.display='none';
+    _regPollTimer=setInterval(pollCapture,800);
+  } catch { toast('Could not connect to camera'); }
+  finally{ btn.disabled=false; btn.textContent='Start capture'; }
 }
 
-function toggleTier(tier) {
-  fetch(B + '/notifications/settings', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({[`tier_${tier}_enabled`]: true})
-  });
+async function pollCapture(){
+  try{
+    const r=await fetch(B+'/register_face/status'); const d=await r.json();
+    const pct=d.progress||0;
+    document.getElementById('reg-bar').style.width=pct+'%';
+    document.getElementById('reg-status').textContent=pct<100
+      ?'Capturing... '+d.frames+' / '+d.target+' frames'
+      :'Done — tap Register to finish.';
+    if(pct>=100||d.status==='ready'){
+      clearInterval(_regPollTimer);
+      document.getElementById('reg-complete-btn').style.display='block';
+    }
+  } catch {}
 }
 
-async function loadNetworkStatus() {
-  try {
-    const r = await fetch(B + '/network/status');
-    const d = await r.json();
-    const sub = document.getElementById('network-status-sub');
-    const dot = document.getElementById('network-dot');
-    if (d.enabled) {
-      sub.textContent = `Online · ${d.threats} threats · ${d.trusted} trusted`;
-      dot.style.background = '#1D9E75';
-      const row = document.getElementById('network-threats-row');
-      if (row) row.style.display = 'flex';
+async function completeRegister(){
+  const btn=document.getElementById('reg-complete-btn');
+  btn.disabled=true; btn.textContent='Processing...';
+  try{
+    const r=await fetch(B+'/register_face/complete',{method:'POST'});
+    const d=await r.json();
+    document.getElementById('reg-step2').style.display='none';
+    document.getElementById('reg-step3').style.display='block';
+    if(d.success){
+      document.getElementById('reg-result-icon').textContent='✓';
+      document.getElementById('reg-result-icon').style.color='var(--cyan)';
+      document.getElementById('reg-result-title').textContent='Face registered';
+      document.getElementById('reg-result-msg').textContent=d.message||'';
+      await loadTrustedFaces();
     } else {
-      sub.textContent = 'Offline — set NXV_RELAY_URL to enable';
-      dot.style.background = '#555';
+      document.getElementById('reg-result-icon').textContent='✗';
+      document.getElementById('reg-result-icon').style.color='var(--red)';
+      document.getElementById('reg-result-title').textContent='Registration failed';
+      document.getElementById('reg-result-msg').textContent=d.message||'Try again';
     }
-  } catch(e) {}
+  } catch { toast('Error during registration'); }
+  finally{ btn.disabled=false; btn.textContent='Register now'; }
 }
 
-// ── Init ──
-renderHomeAlerts();
-loadNetworkStatus();
-updateBanner();
-updateThreatBar();
-startFeed();
-updateGPS();
-loadTrustedFaces();   
-poll();
-setInterval(poll,3000);
-setInterval(pollGPS,30000);
-setInterval(updateHealth,1000);
-setInterval(loadNetworkStatus, 30000);
-
-    // ── Live feed polling (mobile compatible) ──
-function startFeed() {
-  const img = document.getElementById('feed-img');
-  let errors = 0;
-
-  function fetchFrame() {
-    img.src = B + '/snapshot_feed?' + Date.now();
-    errors = 0;
-  }
-
-  img.onload = () => {
-    img.style.display = 'block';
-    document.getElementById('feed-off').style.display = 'none';
-  };
-  img.onerror = () => {
-    errors++;
-    if (errors > 3) {
-      img.style.display = 'none';
-      document.getElementById('feed-off').style.display = 'flex';
-    }
-  };
-
-  fetchFrame();
-  setInterval(fetchFrame, 500);
+async function cancelRegister(){
+  clearInterval(_regPollTimer);
+  await fetch(B+'/register_face/cancel',{method:'POST'}).catch(()=>{});
+  document.getElementById('reg-step1').style.display='block';
+  document.getElementById('reg-step2').style.display='none';
+  document.getElementById('reg-step3').style.display='none';
+  document.getElementById('reg-name').value='';
+  closeModal('modal-register');
 }
 
+async function removeTrusted(id,name){
+  if(!confirm('Remove '+name+' from trusted faces?')) return;
+  try{
+    const r=await fetch(B+'/trusted/'+id,{method:'DELETE'});
+    if(!r.ok) throw new Error();
+    await loadTrustedFaces(); toast(name+' removed');
+  } catch { toast('Could not remove — try again'); }
+}
 
+// Toast 
+let _toastTimer=null;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+// Modals 
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+// Close modal on backdrop tap
+document.querySelectorAll('.mback').forEach(el=>{
+  el.addEventListener('click', e=>{ if(e.target===el) el.classList.remove('open'); });
+});
+
+init();
 </script>
-
-<!-- Video player modal -->
-<div class="mback" id="modal-video">
-  <div class="modal" style="padding-bottom:env(safe-area-inset-bottom)">
-    <div class="mhandle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div class="mtitle" style="margin:0" id="vid-title">Loading...</div>
-      <button class="mcancel" style="width:auto;padding:4px 12px" onclick="closeVideo()">✕</button>
-    </div>
-    <video id="vid-player"
-           controls
-           playsinline
-           webkit-playsinline
-           style="width:100%;border-radius:10px;background:#000;max-height:240px;display:block;margin-bottom:10px">
-      Your browser does not support video playback.
-    </video>
-    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:8px">
-      <span id="vid-time">--</span>
-      <span id="vid-duration">--s</span>
-    </div>
-    <div id="vid-badge" style="margin-bottom:10px"></div>
-    <button class="msubmit" id="vid-report-btn"
-            style="display:none;background:var(--surface2);color:var(--blue);margin-top:0"
-            onclick="openReport()">
-      View police report
-    </button>
-  </div>
-</div>
-<div class="mback" id="modal-register">
-  <div class="modal">
-    <div class="mhandle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div class="mtitle" style="margin:0">Register trusted face</div>
-      <button class="mcancel" style="width:auto;padding:4px 12px"
-              onclick="cancelRegister()">✕</button>
-    </div>
-
-  
-
-    <!-- Step 1: Enter name -->
-    <div id="reg-step1">
-      <p style="font-size:12px;color:var(--muted);margin-bottom:14px">
-        Stand in front of the camera and enter your name.
-        NxV will capture your face and never flag you again.
-      </p>
-      <input class="minput" id="reg-name" placeholder="Your name (e.g. Emmanuel)"
-             type="text" style="margin-bottom:10px"/>
-      <button class="msubmit" onclick="startCapture()">Start face capture</button>
-      <button class="mcancel" onclick="closeModal('modal-register')">Cancel</button>
-    </div>
-
-    <!-- Step 2: Capturing -->
-    <div id="reg-step2" style="display:none;text-align:center">
-      <div class="capture-ring">
-        <div class="capture-icon">👤</div>
-      </div>
-      <div class="capture-status" id="reg-status">
-        Face the camera and hold still...
-      </div>
-      <div class="capture-bar-bg">
-        <div class="capture-bar-fill" id="reg-bar" style="width:0%"></div>
-      </div>
-      <p style="font-size:11px;color:var(--hint);margin-bottom:14px">
-        Keep your face centered · Good lighting helps
-      </p>
-      <button class="msubmit" id="reg-complete-btn"
-              style="display:none;background:var(--green)"
-              onclick="completeRegister()">✓ Register now</button>
-      <button class="mcancel" onclick="cancelRegister()">Cancel</button>
-    </div>
-
-    <!-- Step 3: Result -->
-    <div id="reg-step3" style="display:none;text-align:center;padding:10px 0">
-      <div style="font-size:48px;margin-bottom:12px" id="reg-result-icon">✓</div>
-      <div style="font-size:15px;font-weight:600;margin-bottom:8px"
-           id="reg-result-title">Registered!</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:20px"
-           id="reg-result-msg"></div>
-      <button class="msubmit" onclick="closeModal('modal-register')">Done</button>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>

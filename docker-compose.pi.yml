@@ -1,0 +1,37 @@
+services:
+  nxv-pi:
+    build:
+      context: .
+      dockerfile: Dockerfile.pi
+    container_name: nxv-pi
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      NXV_TWILIO_SID:      ${NXV_TWILIO_SID}
+      NXV_TWILIO_TOKEN:    ${NXV_TWILIO_TOKEN}
+      NXV_TWILIO_FROM:     ${NXV_TWILIO_FROM}
+      NXV_OWNER_PHONE:     ${NXV_OWNER_PHONE}
+      NXV_CONTACT_1_PHONE: ${NXV_CONTACT_1_PHONE}
+      NXV_CONTACT_2_PHONE: ${NXV_CONTACT_2_PHONE}
+      NXV_CONTACT_3_PHONE: ${NXV_CONTACT_3_PHONE}
+      NXV_RELAY_URL:       ${NXV_RELAY_URL}
+      NXV_NETWORK_KEY:     ${NXV_NETWORK_KEY}
+      NXV_CAMERA_ID:       ${NXV_CAMERA_ID}
+      NXV_GOOGLE_API_KEY:  ${NXV_GOOGLE_API_KEY}
+      NXV_TEST_MODE:       ${NXV_TEST_MODE:-true}
+      PYTHONPATH:          /app
+    volumes:
+      - ./evidence:/app/evidence
+      - ./nxv.db:/app/nxv.db
+      - ./datasets:/app/datasets
+    devices:
+      - /dev/video0:/dev/video0
+    group_add:
+      - video
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/status')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s

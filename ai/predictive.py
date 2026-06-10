@@ -1,7 +1,4 @@
 """
-NxV - Predictive Threat Modeling (Option A — Time-Based)
-ai/predictive.py
-
 Learns YOUR home's normal activity patterns over time.
 After 24 hours of data, flags activity that deviates from
 your personal baseline — not just generic "night = dangerous".
@@ -60,7 +57,7 @@ class PredictiveModel:
         print(f"[NxV Predict] Model ready — "
               f"{self._event_count} events in history")
 
-    # ── Public API ─────────────────────────────────────────────────────────────
+    # Public API 
 
     def log_event(self, hour: int = None, duration: float = 0,
                   had_person: bool = True, score: int = 0,
@@ -117,7 +114,7 @@ class PredictiveModel:
             avg_events = stats.get('avg_events_per_day', 0)
             avg_dwell  = stats.get('avg_duration', 0)
 
-            # ── Quiet hour boost ──────────────────────────────────────────────
+            # Quiet hour boost 
             if avg_events < 0.1:
                 # This hour almost never has activity
                 boost   += BOOST_QUIET_HOUR
@@ -128,21 +125,21 @@ class PredictiveModel:
                 boost   += BOOST_UNUSUAL_TIME
                 reasons.append(f"low_activity_hour:{hour}:00")
 
-            # ── Dwell time anomaly ────────────────────────────────────────────
+            # Dwell time anomaly 
             if avg_dwell > 0 and current_dwell > avg_dwell * 2.5:
                 boost   += BOOST_LONG_DWELL
                 reasons.append(
                     f"unusual_dwell:{current_dwell:.0f}s_vs_avg_{avg_dwell:.0f}s"
                 )
 
-        # ── New face boost ────────────────────────────────────────────────────
+        # New face boost
         if is_new_face:
             boost   += BOOST_FREQUENT_NEW
             reasons.append("new_unrecognized_face")
 
         return min(boost, 35), (reasons[0] if reasons else None)
 
-    def get_baseline_summary(self) -> dict:
+    def get_baseline_summary(self) -> dict: #Sorting
         """Return baseline stats for display in the app."""
         if not self._has_enough_data():
             return {
@@ -183,7 +180,7 @@ class PredictiveModel:
         self._event_count = 0
         print("[NxV Predict] Baseline reset")
 
-    # ── Internals ──────────────────────────────────────────────────────────────
+    # Internals 
 
     def _ensure_table(self):
         """Create the predictive events table if it doesn't exist."""

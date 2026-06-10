@@ -1,6 +1,4 @@
 """
-
-
 Plays audio warnings through the Pi's audio output when a threat is detected.
 
 Modes:
@@ -25,7 +23,7 @@ import time
 import os
 
 
-# ── Try importing pygame ───────────────────────────────────────────────────────
+# Try importing pygame 
 try:
     import pygame
     pygame.mixer.init()
@@ -35,13 +33,13 @@ except Exception:
     print("[NxV Deterrent] pygame not available — using terminal bell fallback.")
 
 
-# ── Audio file paths ──────────────────────────────────────────────────────────
+# Audio file paths 
 BASE_DIR     = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SOUND_DIR    = os.path.join(BASE_DIR, "assets", "sounds")
 WARNING_FILE = os.path.join(SOUND_DIR, "warning.mp3")
 SIREN_FILE   = os.path.join(SOUND_DIR, "siren.mp3")
 
-# ── Cooldown ──────────────────────────────────────────────────────────────────
+# Cooldown 
 DETERRENT_COOLDOWN = 30   # seconds between deterrent triggers
 
 
@@ -88,7 +86,7 @@ class Deterrent:
             except Exception:
                 pass
 
-    # ── Audio playback ─────────────────────────────────────────────────────────
+    # Audio playback 
 
     def _play_warning(self) -> bool:
         """Play voice warning audio."""
@@ -102,7 +100,6 @@ class Deterrent:
             except Exception as e:
                 print(f"[NxV Deterrent] Audio error: {e}")
 
-        # Fallback — terminal bell x3
         self._bell(3)
         return True
 

@@ -1,7 +1,4 @@
 """
-NxV - Violence Detector
-ai/violence.py
-
 Analyzes interactions between tracked persons to detect violent behavior.
 Lightweight — designed to run on Pi without killing CPU.
 
@@ -16,7 +13,7 @@ Signals detected:
 import numpy as np
 
 
-# ── Tunable thresholds ────────────────────────────────────────────────────────
+# Tunable thresholds
 CLOSE_CONTACT_DIST  = 80    # pixels between centroids = close contact
 RAPID_MOVE_SPEED    = 200   # px/sec spike = rapid/aggressive movement
 FALL_RATIO          = 1.8   # width/height ratio — person lying down
@@ -47,7 +44,7 @@ class ViolenceDetector:
         if len(persons) == 0:
             return ViolenceResult(0, [])
 
-        # ── Single-person signals ─────────────────────────────────────────────
+        # Single-person signals 
         for person in persons:
 
             # Rapid movement spike
@@ -68,7 +65,7 @@ class ViolenceDetector:
                     score += 20
                     flags.append(f"drop(P{person.id})")
 
-        # ── Multi-person signals ──────────────────────────────────────────────
+        # Multi-person signals 
         if len(persons) >= 2:
             pairs = self._get_pairs(persons)
 
@@ -96,7 +93,7 @@ class ViolenceDetector:
         score = min(100, score)
         return ViolenceResult(score, flags)
 
-    # ── Helpers ───────────────────────────────────────────────────────────────
+    # Helpers 
 
     def _get_pairs(self, persons: list) -> list:
         """Return all unique pairs of persons."""

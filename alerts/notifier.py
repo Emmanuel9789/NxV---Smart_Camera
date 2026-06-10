@@ -13,7 +13,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 load_dotenv()
 
-# ── Try importing Twilio ───────────────────────────────────────────────────────
+# Try importing Twilio 
 try:
     from twilio.rest import Client
     TWILIO_AVAILABLE = True
@@ -31,7 +31,7 @@ TWILIO_FROM     = os.environ.get("NXV_TWILIO_FROM",    "")
 OWNER_PHONE     = os.environ.get("NXV_OWNER_PHONE",    "")
 CONTACT_PHONE   = os.environ.get("NXV_CONTACT_PHONE",  "")
 
-# ── Rate limiting ─────────────────────────────────────────────────────────────
+# Rate limiting 
 # Minimum seconds between alerts of the same type to avoid spam
 COOLDOWN = {
     "NOTIFY"    : 60,    # 1 min between NOTIFY SMS
@@ -64,7 +64,7 @@ class Notifier:
         else:
             print("[NxV Notifier] Running in DRY RUN mode — SMS will be printed, not sent.")
 
-    # ── Public alert methods ───────────────────────────────────────────────────
+    # Public alert methods 
 
     def notify_owner(self,
                      threat_score : int,
@@ -194,7 +194,7 @@ class Notifier:
             print(f"[NxV Notifier] Call failed: {e}")
             return False
 
-    # ── Internals ──────────────────────────────────────────────────────────────
+    # Internals 
 
     def _can_send(self, tag: str, escalation: str) -> bool:
         """Check rate limit for this alert type."""

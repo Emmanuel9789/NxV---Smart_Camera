@@ -1,0 +1,16 @@
+.env
+.env.*
+*.env
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+.venv
+venv
+evidence/clips/*.avi
+evidence/snapshots/*.jpg
+nxv.db
+datasets/face_embeddings.pkl
+*.log
+.DS_Store

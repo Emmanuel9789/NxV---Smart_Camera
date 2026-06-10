@@ -1,7 +1,4 @@
 """
-NxV - GPS Location API
-api/gps.py
-
 Receives GPS coordinates from the owner's phone.
 Calculates distance from home and automatically sets user_away flag.
 
@@ -11,28 +8,23 @@ How it works:
   3. If distance > AWAY_THRESHOLD → user_away = True
   4. If distance < HOME_THRESHOLD → user_away = False
   5. Escalation engine adjusts automatically
-
-Phone automation options (no app needed yet):
-  - iPhone: use Shortcuts app to ping the URL every 30 mins
-  - Android: use Tasker or MacroDroid to ping the URL automatically
-  - Or: just bookmark the URL and tap it when leaving/arriving
 """
 
 import math
 from datetime import datetime
 
 
-# ── Your home coordinates ─────────────────────────────────────────────────────
+# Your home coordinates 
 # Get these from Google Maps — right click your house → copy coordinates
 HOME_LAT = 39.204417  # ← replace with your home latitude  e.g. 39.2034
 HOME_LON = -76.779902   # ← replace with your home longitude e.g. -76.8621
 
-# ── Distance thresholds ───────────────────────────────────────────────────────
+# Distance thresholds 
 AWAY_THRESHOLD_KM  = 0.5   # further than 500m = AWAY
 HOME_THRESHOLD_KM  = 0.3   # closer than 300m  = HOME
 # The gap between thresholds prevents flapping when you're on the boundary
 
-# ── Escalation distance scaling ───────────────────────────────────────────────
+# Escalation distance scaling 
 # How far away changes escalation behavior
 NEARBY_KM      = 2.0    # under 2km   → normal escalation
 FAR_KM         = 20.0   # 2-20km      → bump escalation one level
@@ -114,7 +106,7 @@ class GPSTracker:
         age = (datetime.now() - self.last_update).total_seconds() / 60
         return age > max_age_minutes
 
-    # ── Math ──────────────────────────────────────────────────────────────────
+    # Math 
 
     @staticmethod
     def _haversine(lat1: float, lon1: float,

@@ -151,7 +151,7 @@ class PersonTracker:
         self.persons            = OrderedDict()   # id → Person
         self._next_id           = 0
 
-    # ── Public API ─────────────────────────────────────────────────────────────
+    # Public API 
 
     def update(self, boxes: list, timestamp: float = None) -> list:
         """
@@ -179,7 +179,7 @@ class PersonTracker:
                 self._register(box, timestamp)
             return list(self.persons.values())
 
-        # ── Match detections to existing persons via IoU ───────────────────
+        # Match detections to existing persons via IoU 
         person_ids   = list(self.persons.keys())
         person_boxes = [self.persons[pid].bbox for pid in person_ids]
 
@@ -232,7 +232,7 @@ class PersonTracker:
         self.persons.clear()
         self._next_id = 0
 
-    # ── Drawing ────────────────────────────────────────────────────────────────
+    # Drawing 
 
     def draw(self, frame: np.ndarray, persons: list = None) -> np.ndarray:
         """
@@ -270,7 +270,7 @@ class PersonTracker:
 
         return frame
 
-    # ── Internals ──────────────────────────────────────────────────────────────
+    # Internals 
 
     def _register(self, bbox: tuple, timestamp: float):
         person = Person(self._next_id, bbox, timestamp)

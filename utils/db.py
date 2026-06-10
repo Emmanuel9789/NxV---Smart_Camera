@@ -211,7 +211,7 @@ def save_clip(id: str, path: str, recorded_at: str,
     conn.commit()
     conn.close()
 
-def get_clips(filter_type: str = 'all', limit: int = 100) -> list:
+def get_clips(filter_type: str = 'all', limit: int = 100) -> list: #Sorting
     conn  = get_conn()
     if filter_type == 'threats':
         rows = conn.execute("""
@@ -423,7 +423,7 @@ def get_motion_log(limit: int = 200, threats_only: bool = False) -> list:
 # SETTINGS
 # ════════════════════════════════════════════════════════════════
 
-DEFAULT_SETTINGS = {
+DEFAULT_SETTINGS = { #Dictionary
     "gps"            : "true",
     "deterrent"      : "true",
     "audio"          : "false",

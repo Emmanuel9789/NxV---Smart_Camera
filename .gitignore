@@ -7,4 +7,6 @@ __pycache__/
 .vscode/
 
 # Logs
-*.log
+*.log.env
+*.pkl
+nxv.db

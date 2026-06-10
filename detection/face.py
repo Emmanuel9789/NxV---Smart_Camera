@@ -1,6 +1,4 @@
 """
-
-
 Handles:
   - Face detection in every frame
   - Masked / obscured face flagging
@@ -25,7 +23,7 @@ except ImportError:
           "Run: pip install face_recognition --break-system-packages")
 
 
-# ─── Paths ────────────────────────────────────────────────────────────────────
+# Paths 
 BASE_DIR        = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH         = os.path.join(BASE_DIR, "datasets", "flagged_persons.json")
 EMBEDDINGS_PATH = os.path.join(BASE_DIR, "datasets", "face_embeddings.pkl")
@@ -77,7 +75,7 @@ class FaceDetector:
         print(f"[NxV FaceDetector] Loaded {len(self.flagged_db)} flagged persons.")
         print(f"[NxV FaceDetector] Embedding match: {'ON' if FACE_RECOGNITION_AVAILABLE else 'OFF'}")
 
-    # ── DB helpers ─────────────────────────────────────────────────────────────
+    # DB helpers 
 
     def _load_db(self) -> list:
         """Load flagged persons JSON database."""
@@ -111,7 +109,7 @@ class FaceDetector:
         self.embeddings  = self._load_embeddings()
         print(f"[NxV FaceDetector] DB reloaded — {len(self.flagged_db)} persons.")
 
-    # ── Core detection ─────────────────────────────────────────────────────────
+    # Core detection
 
     def detect(self, frame: np.ndarray) -> list:
         """
@@ -157,7 +155,7 @@ class FaceDetector:
 
         return results
 
-    # ── Mask detection ─────────────────────────────────────────────────────────
+    # Mask detection 
 
     def _is_masked(self, face_roi: np.ndarray) -> bool:
         """
@@ -182,7 +180,7 @@ class FaceDetector:
         skin_ratio = np.sum(mask > 0) / mask.size
         return skin_ratio < self.mask_threshold
 
-    # ── Face matching ──────────────────────────────────────────────────────────
+    # Face matching
 
     def _match_face(self, frame: np.ndarray,
                     x: int, y: int, w: int, h: int) -> dict | None:
@@ -223,7 +221,7 @@ class FaceDetector:
 
         return None
 
-    # ── Label builder ──────────────────────────────────────────────────────────
+    # Label builder
 
     def _build_label(self, masked: bool, match: dict | None, threat_score: int) -> str:
         parts = []
@@ -236,7 +234,7 @@ class FaceDetector:
         parts.append(f"T:{threat_score}")
         return " | ".join(parts)
 
-    # ── Draw overlay ───────────────────────────────────────────────────────────
+    # Draw overlay
 
     def draw(self, frame: np.ndarray, results: list) -> np.ndarray:
         """
@@ -270,26 +268,14 @@ class FaceDetector:
         return frame
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # DB Management helpers (call from a separate admin script, not from main loop)
-# ─────────────────────────────────────────────────────────────────────────────
 
 def add_person_to_db(name: str,
                      threat_score: int,
                      reason: str,
                      image_paths: list[str],
                      person_id: str | None = None):
-    """
-    Add a new flagged person to the database and compute their face embedding.
 
-    Example:
-        add_person_to_db(
-            name         = "John Doe",
-            threat_score = 75,
-            reason       = "Prior break-in attempt",
-            image_paths  = ["/path/to/face1.jpg", "/path/to/face2.jpg"]
-        )
-    """
     if not FACE_RECOGNITION_AVAILABLE:
         print("[NxV] face_recognition not installed — cannot compute embeddings.")
         return

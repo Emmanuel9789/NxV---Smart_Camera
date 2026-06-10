@@ -1,21 +1,18 @@
 """
-NxV - Behavior Analyzer
-ai/behavior.py
-
 Takes Person objects from the tracker and scores their behavior.
 Outputs a 0-100 behavior score per person.
 
 Signals detected:
-  - Loitering    : staying in one zone too long
-  - Pacing       : back and forth movement
-  - Scanning     : slow movement while changing direction frequently
-  - Fast approach: moving quickly toward the camera
+ Loitering    : staying in one zone too long
+ Pacing       : back and forth movement
+ Scanning     : slow movement while changing direction frequently
+ Fast approach: moving quickly toward the camera
 """
 
 import numpy as np
 
 
-# ── Tunable thresholds ────────────────────────────────────────────────────────
+# Tunable thresholds 
 LOITER_SECONDS      = 15.0   # dwell time before loitering flag
 LOITER_DISPLACEMENT = 60.0   # max displacement to still count as loitering
 FAST_APPROACH_SPEED = 120.0  # pixels/sec toward camera = fast approach
@@ -41,14 +38,14 @@ class BehaviorAnalyzer:
         results = {}
         for person in persons:
             result = self._score_person(person)
-            results[person.id] = result
+            results[person.id] = result 
         return results
 
     def _score_person(self, person) -> "BehaviorResult":
         score   = 0
         flags   = []
 
-        # ── Loitering ─────────────────────────────────────────────────────────
+        # Loitering 
         # Person has been in scene a long time but hasn't moved much
         if (person.dwell_time >= LOITER_SECONDS and
                 person.displacement <= LOITER_DISPLACEMENT):
@@ -56,18 +53,18 @@ class BehaviorAnalyzer:
             score += loiter_score
             flags.append(f"loitering({person.dwell_time:.0f}s)")
 
-        # ── Pacing ────────────────────────────────────────────────────────────
+        # Pacing 
         if person.is_pacing():
             score += 25
             flags.append("pacing")
 
-        # ── Scanning ──────────────────────────────────────────────────────────
+        # Scanning
         # Slow overall speed but many direction changes = scanning behavior
         if self._is_scanning(person):
             score += 20
             flags.append("scanning")
 
-        # ── Fast approach ─────────────────────────────────────────────────────
+        # Fast approach
         # Moving quickly AND getting larger in frame (toward camera)
         if self._is_approaching(person):
             score += 30

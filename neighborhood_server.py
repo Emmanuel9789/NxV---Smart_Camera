@@ -1,7 +1,4 @@
 """
-NxV - Neighborhood Relay Server v2
-neighborhood_server.py
-
 Handles both threat sharing and street trust circle.
 Run on any VPS or your PC for testing.
 
@@ -22,7 +19,7 @@ app = Flask(__name__)
 NETWORK_KEY = os.environ.get("NXV_NETWORK_KEY", "nxv-default-key-change-me")
 PORT        = int(os.environ.get("PORT", 6000))
 
-# ── Storage (replace with Redis/PostgreSQL for production) ────────────────────
+# Storage (replace with Redis/PostgreSQL for production) 
 _threats    = {}   # person_id → threat record
 _trusted    = {}   # person_id → trusted record
 _cameras    = {}   # camera_id → last_seen
@@ -47,7 +44,7 @@ def log(action, camera_id, name, extra=""):
     print(f"[Relay] {action}: {name} from {camera_id} {extra}")
 
 
-# ── Health ────────────────────────────────────────────────────────────────────
+# Health 
 
 @app.route('/health')
 def health():
@@ -60,7 +57,7 @@ def health():
     })
 
 
-# ── Threat sharing ────────────────────────────────────────────────────────────
+# Threat sharing 
 
 @app.route('/share', methods=['POST'])
 def share_threat():
@@ -122,7 +119,7 @@ def remove_threat(person_id):
     return jsonify({"error": "Not found"}), 404
 
 
-# ── Street trust circle ───────────────────────────────────────────────────────
+# Street trust circle 
 
 @app.route('/share_trusted', methods=['POST'])
 def share_trusted():
@@ -178,7 +175,7 @@ def remove_trusted(person_id):
     return jsonify({"error": "Not found"}), 404
 
 
-# ── Admin ─────────────────────────────────────────────────────────────────────
+# Admin 
 
 @app.route('/cameras')
 def get_cameras():

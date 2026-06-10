@@ -1,5 +1,4 @@
 """
-
 Receives ThreatScore objects and decides:
   - Who to alert (owner / trusted contact / police prompt)
   - When to escalate (owner unreachable timeout)
@@ -19,10 +18,10 @@ from alerts.call_chain import CallChain
 
 
 
-# ── Config ────────────────────────────────────────────────────────────────────
+# Config 
 OWNER_RESPONSE_TIMEOUT = 120   # seconds before assuming owner unreachable
 OWNER_NAME             = "Emmanuel"
-HOME_ADDRESS           = "your home address"   # update this
+HOME_ADDRESS           = "your home address"   # I need to change this in the future
 
 
 class EscalationEngine:
@@ -67,14 +66,14 @@ class EscalationEngine:
         if escalation == "NONE":
             return actions
 
-        # ── NOTIFY — SMS owner only ───────────────────────────────────────────
+        #  NOTIFY — SMS owner only 
         if escalation == "NOTIFY":
             sent = self.notifier.notify_owner(score, escalation, flags)
             actions["sms_owner"] = sent
             if sent:
                 self._owner_alerted_at.setdefault(pid, time.time())
 
-        # ── ALERT — SMS owner + deterrent + start unreachable timer ──────────
+        # ALERT — SMS owner + deterrent + start unreachable timer 
         elif escalation == "ALERT":
             sent = self.notifier.notify_owner(score, escalation, flags)
             actions["sms_owner"] = sent
@@ -98,7 +97,7 @@ class EscalationEngine:
             elif not user_away:
                 self._check_owner_timeout(pid, score, escalation, flags, actions)
 
-             # ── EMERGENCY — all channels immediately ──────────────────
+             # EMERGENCY — all channels immediately
         elif escalation == "EMERGENCY":
             # SMS owner
             sent_o = self.notifier.notify_owner(score, escalation, flags)

@@ -1,7 +1,4 @@
 """
-NxV - Safe Zone Manager
-ai/safe_zone.py
-
 Registers trusted faces so NxV never flags them.
 Works from the app (live camera) or CLI (for testing).
 
@@ -14,8 +11,6 @@ Flow:
   6. Face detector reloads
   7. Returns success
 
-CLI usage:
-  python ai/safe_zone.py --name "Emmanuel" --seconds 5
 """
 
 import cv2
@@ -213,7 +208,7 @@ class SafeZoneManager:
             pass
 
 
-# ── CLI registration (for testing without app) ────────────────────────────────
+# CLI registration (for testing without app) 
 
 def cli_register():
     parser = argparse.ArgumentParser(description='NxV Safe Zone Registration')

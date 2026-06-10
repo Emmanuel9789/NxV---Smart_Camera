@@ -1,7 +1,4 @@
 """
-NxV - Notification Tier System
-alerts/notification_tiers.py
-
 Manages all 5 notification tiers:
 
   TIER 0 — Silent log (always saved, never notified unless user opts in)
@@ -33,8 +30,8 @@ Manages all 5 notification tiers:
 from datetime import datetime
 
 
-# ── Tier definitions ──────────────────────────────────────────────────────────
-TIERS = {
+# Tier definitions 
+TIERS = { #Dictionary
     0: {
         "name"        : "SILENT",
         "label"       : "Motion log",
@@ -92,7 +89,7 @@ def get_tier_for_event(event_type: str, threat_score: int = 0,
     """
     flags = flags or []
 
-    # ── TIER 4 — EMERGENCY ────────────────────────────────────────────────────
+    # TIER 4 — EMERGENCY 
     if any(f in flags for f in [
         "AIMING_AT_CAMERA", "BREAK_IN_ATTEMPT",
     ]):
@@ -100,7 +97,7 @@ def get_tier_for_event(event_type: str, threat_score: int = 0,
     if threat_score >= 75:
         return 4
 
-    # ── TIER 3 — ALERT ────────────────────────────────────────────────────────
+    # TIER 3 — ALERT 
     if any("weapon:" in f for f in flags):
         return 3
     if any("face:known_dangerous" in f for f in flags):
@@ -108,7 +105,7 @@ def get_tier_for_event(event_type: str, threat_score: int = 0,
     if threat_score >= 55:
         return 3
 
-    # ── TIER 2 — NOTIFY (mandatory) ───────────────────────────────────────────
+    # TIER 2 — NOTIFY (mandatory) 
     if any(f in flags for f in [
         "face:masked", "near_door_zone", "known_danger_floor",
     ]):
@@ -118,7 +115,7 @@ def get_tier_for_event(event_type: str, threat_score: int = 0,
     if threat_score >= 30:
         return 2
 
-    # ── TIER 1 — FRIENDLY ─────────────────────────────────────────────────────
+    # TIER 1 — FRIENDLY 
     if event_type == "delivery":
         return 1
     if event_type == "trusted_face":

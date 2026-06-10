@@ -1,6 +1,4 @@
 """
-NxV - Neighborhood Threat Network (v2 - Full Tiered Trust System)
-ai/neighborhood.py
 
 Three-layer intelligence sharing:
 
@@ -50,7 +48,7 @@ except ImportError:
     FR_OK = False
 
 
-# ── Config ─────────────────────────────────────────────────────────────────────
+# Config 
 RELAY_URL    = os.environ.get("NXV_RELAY_URL", "")
 CAMERA_ID    = os.environ.get("NXV_CAMERA_ID", str(uuid.uuid4())[:8])
 NETWORK_KEY  = os.environ.get("NXV_NETWORK_KEY", "")
@@ -58,8 +56,8 @@ SYNC_INTERVAL= 60
 MATCH_THRESH = 0.5
 
 
-# ── Crime severity → score boost + escalation ──────────────────────────────────
-SEVERITY_MAP = {
+# Crime severity → score boost + escalation
+SEVERITY_MAP = { #Hash map
     "MINOR"   : {"boost": 15,  "escalate": False, "min_escalation": "NONE"},
     "MODERATE": {"boost": 25,  "escalate": False, "min_escalation": "NONE"},
     "SEVERE"  : {"boost": 35,  "escalate": True,  "min_escalation": "NOTIFY"},
@@ -207,7 +205,7 @@ class NeighborhoodNetwork:
         )
         self._sync_thread.start()
 
-    # ── Core face check ────────────────────────────────────────────────────────
+    # Core face check 
 
     def check_face(self, encoding,
                    behavior_score: int = 0,
@@ -231,7 +229,7 @@ class NeighborhoodNetwork:
         if not FR_OK:
             return None
 
-        # ── Layer 2 check: Street trust circle ────────────────────────────────
+        # Layer 2 check: Street trust circle 
         # Check trusted first — trusted person = never flag
         trusted_match = self._check_trusted(encoding)
         if trusted_match:
@@ -247,7 +245,7 @@ class NeighborhoodNetwork:
                 "relationship"   : trusted_match.relationship,
             }
 
-        # ── Layer 1 check: Global threat network ──────────────────────────────
+        # Layer 1 check: Global threat network 
         threat_match = self._check_threats(encoding)
         if threat_match:
             record = threat_match
@@ -284,7 +282,7 @@ class NeighborhoodNetwork:
 
         return None
 
-    # ── Share threat ───────────────────────────────────────────────────────────
+    #  Share threat 
 
     def share_threat(self, record: NetworkThreatRecord) -> bool:
         """Share a dangerous person to the global network."""
@@ -407,7 +405,7 @@ class NeighborhoodNetwork:
               f"({severity}) — {keywords}")
         return record
 
-    # ── Internals ──────────────────────────────────────────────────────────────
+    # Internals 
 
     def _check_threats(self, encoding) -> NetworkThreatRecord | None:
         with self._lock:
@@ -534,7 +532,7 @@ class NeighborhoodNetwork:
             (data + NETWORK_KEY).encode()
         ).hexdigest()[:16]
 
-    # ── Public getters ─────────────────────────────────────────────────────────
+    # Public getters 
 
     @property
     def is_enabled(self) -> bool:

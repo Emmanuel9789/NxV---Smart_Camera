@@ -1,12 +1,9 @@
 """
-NxV - Delivery Detector
-ai/delivery.py
-
 Detects delivery scenarios at the door:
-  - Delivery trucks (UPS, FedEx, Amazon, USPS, DHL)
-  - Person carrying a package/box
-  - Person at door who leaves quickly (< 90 seconds)
-  - Time-of-day context (daytime = likely delivery)
+  Delivery trucks (UPS, FedEx, Amazon, USPS, DHL)
+  Person carrying a package/box
+  Person at door who leaves quickly (< 90 seconds)
+  Time-of-day context (daytime = likely delivery)
 
 Outputs:
   DeliveryResult with type, confidence, and label
@@ -18,7 +15,7 @@ import time
 from datetime import datetime
 
 
-# ── Delivery truck colors (BGR) ───────────────────────────────────────────────
+# Delivery truck colors (BGR)
 # Each carrier has a distinctive vehicle color
 CARRIER_COLORS = {
     "UPS":    {"lower": np.array([0,  50,  80]),   "upper": np.array([20, 180, 180]),  "name": "UPS"},
@@ -57,13 +54,14 @@ class DeliveryDetector:
           label        — human readable description
           tier         — notification tier (0 = silent, 1 = friendly)
         """
+        
         hour = datetime.now().hour
         is_daytime = DELIVERY_HOURS[0] <= hour <= DELIVERY_HOURS[1]
 
-        # ── Check for delivery truck colors ───────────────────────────────────
+        #  Check for delivery truck colors 
         carrier, truck_conf = self._detect_truck(frame)
 
-        # ── Check person dwell time (quick visit = delivery) ──────────────────
+        #  Check person dwell time (quick visit = delivery) 
         quick_visit = False
         for person in persons:
             pid = person.id
@@ -83,7 +81,7 @@ class DeliveryDetector:
             if now - t < 300
         }
 
-        # ── Scoring ───────────────────────────────────────────────────────────
+        # Scoring 
         confidence = 0.0
 
         if carrier:
@@ -98,7 +96,7 @@ class DeliveryDetector:
         confidence = min(1.0, confidence)
         is_delivery = confidence >= 0.4
 
-        # ── Build label ───────────────────────────────────────────────────────
+        # Build label 
         if is_delivery:
             if carrier:
                 label = f"{carrier} delivery"

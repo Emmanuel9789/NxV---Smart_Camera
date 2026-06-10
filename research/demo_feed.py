@@ -5,20 +5,50 @@ dsa_simulation/demo_feed.py
 Plays a video file through the full detection pipeline
 and streams it to a browser with DSA-focused overlay.
 
-Shows in real time:
-  - Motion detection
-  - Weapon detection (YOLO)
-  - Threat score calculation
-  - Escalation level
-  - Algorithm breakdown per frame
-
-Run:
-  cd /home/emmanuel/dsa_simulation
-  python demo_feed.py
-
-Then open in browser:
-  http://10.71.53.113:5001
 """
+
+
+
+
+"""
+    Hash Maps
+
+scoring/threat_score.py
+ 
+
+    Dictionnaries
+
+ai/behavior.py         
+ai/predictive.py       
+utils/db.py            
+alerts/notification_tiers.py
+camera/stream.py       
+
+    Queue
+    
+camera/stream.py       
+alerts/call_chain.py   
+utils/clip_recorder.py 
+
+
+    Sorting
+    
+scoring/threat_score.py   
+utils/db.py             
+ai/predictive.py          
+
+    Graphs
+    
+tracking/tracker.py     
+ai/neighborhood.py      
+
+Trees
+
+ utils/db.py              
+ ai/safe_zone.py          
+ scoring/threat_score.py  
+"""
+
 
 import cv2
 import time
@@ -39,18 +69,18 @@ from ai.violence          import ViolenceResult
 
 app = Flask(__name__)
 
-# ── Config ────────────────────────────────────────────────────────────────────
+# ── Config 
 VIDEO_PATH = "/home/emmanuel/camera_project/research/test_video.mp4"
-LOOP_VIDEO = True    # loop when video ends
-DSA_PORT   = 5001    # different port from NxV (5000)
+LOOP_VIDEO = True   
+DSA_PORT   = 5001   
 
-# ── Module instances ──────────────────────────────────────────────────────────
+# ── Module instances 
 motion_detector  = MotionDetector(min_area=1500)
 person_tracker   = PersonTracker()
 behavior_analyzer= BehaviorAnalyzer()
 threat_engine    = ThreatScoreEngine()
 
-# ── Async weapon detection ────────────────────────────────────────────────────
+# ── Async weapon detection 
 _weapon_detections = []
 _weapon_lock       = threading.Lock()
 _weapon_thread     = None

@@ -17,14 +17,14 @@ Social media search:
 import datetime
 
 
-# ── Weights ───────────────────────────────────────────────────────────────────
+# Weights 
 WEIGHT_BEHAVIOR  = 0.20
 WEIGHT_VIOLENCE  = 0.25
 WEIGHT_WEAPON    = 0.30
 WEIGHT_FACE      = 0.15
 WEIGHT_TIME      = 0.10
 
-# ── Time of day risk ──────────────────────────────────────────────────────────
+# Time of day risk 
 NIGHT_HOURS   = range(22, 24)
 LATE_HOURS    = range(0, 5)
 EVENING_HOURS = range(19, 22)
@@ -39,32 +39,32 @@ def time_risk_score() -> tuple:
         return (40, "evening")
     return (0, "daytime")
 
-# ── Escalation thresholds ─────────────────────────────────────────────────────
+# Escalation thresholds
 ESCALATION_NOTIFY    = 30
 ESCALATION_ALERT     = 55
 ESCALATION_EMERGENCY = 75
 
-# ── User away modifiers ───────────────────────────────────────────────────────
+# User away modifiers
 AWAY_SCORE_BONUS     = 15    # added to final score when user is away
 AWAY_MIN_SCORE       = 25    # any detection when away = at least this score
 
 # Escalation bump order when user is away
-ESCALATION_BUMP = {
+ESCALATION_BUMP = {    #Hash map
     "NONE"      : "NOTIFY",
     "NOTIFY"    : "ALERT",
     "ALERT"     : "EMERGENCY",
     "EMERGENCY" : "EMERGENCY",
 }
 
-# ── Social media search trigger ───────────────────────────────────────────────
+# Social media search trigger
 SOCIAL_SEARCH_THRESHOLD = 30
 
-# ── Motion filter ─────────────────────────────────────────────────────────────
+# Motion filter
 PASSING_MAX_DWELL = 4.0
 PASSING_MIN_SPEED = 80.0
 
 
-class ThreatScoreEngine:
+class ThreatScoreEngine: #Sorting
 
     def score(self,
               person_id        : int,
@@ -94,7 +94,7 @@ class ThreatScoreEngine:
         if user_away:
             all_flags.append("user_away")
 
-        # ── HARD RULE 1: Weapon aimed → EMERGENCY ────────────────────────────
+        # HARD RULE 1: Weapon aimed → EMERGENCY 
         if is_aiming:
             all_flags.append("AIMING_AT_CAMERA")
             return ThreatScore(
@@ -104,7 +104,7 @@ class ThreatScoreEngine:
                 user_away=user_away
             )
 
-        # ── HARD RULE 2: Break-in at door at night → EMERGENCY ───────────────
+        # HARD RULE 2: Break-in at door at night → EMERGENCY 
         t_score, t_label = time_risk_score()
         if near_door and t_label in ("night", "late_night") and dwell_time > 5:
             all_flags.append(f"BREAK_IN_ATTEMPT({t_label})")
@@ -115,7 +115,7 @@ class ThreatScoreEngine:
                 user_away=user_away
             )
 
-        # ── MOTION FILTER: Passing by → cap at 10, no alert ──────────────────
+        # MOTION FILTER: Passing by → cap at 10, no alert 
         # User away exception: even passing motion gets a NOTIFY when away
         is_passing = (dwell_time < PASSING_MAX_DWELL and
                       speed > PASSING_MIN_SPEED)
@@ -137,23 +137,23 @@ class ThreatScoreEngine:
                 user_away=user_away
             )
 
-        # ── Weapon score ──────────────────────────────────────────────────────
+        # Weapon score 
         weapon_score = 0
         if weapon_count > 0:
             weapon_score = min(100, weapon_count * 60)
             for wt in weapon_types:
                 all_flags.append(f"weapon:{wt}")
 
-        # ── Time of day ───────────────────────────────────────────────────────
+        # Time of day 
         if t_label != "daytime":
             all_flags.append(f"time:{t_label}")
 
-        # ── Near door (daytime) ───────────────────────────────────────────────
+        # Near door (daytime) 
         if near_door:
             behavior_score = min(100, behavior_score + 20)
             all_flags.append("near_door_zone")
 
-        # ── Weighted combination ──────────────────────────────────────────────
+        # Weighted combination 
         weighted = (
             behavior_score * WEIGHT_BEHAVIOR +
             violence_score * WEIGHT_VIOLENCE +
@@ -163,14 +163,14 @@ class ThreatScoreEngine:
         )
         final_score = min(100, int(round(weighted)))
 
-        # ── User away: add bonus + enforce minimum ────────────────────────────
+        # User away: add bonus + enforce minimum 
         if user_away:
             final_score = min(100, final_score + AWAY_SCORE_BONUS)
             if final_score < AWAY_MIN_SCORE:
                 final_score = AWAY_MIN_SCORE
                 all_flags.append("away_floor_applied")
 
-        # ── Soft floors ───────────────────────────────────────────────────────
+        # Soft floors 
         if weapon_count > 0 and final_score < 60:
             final_score = 60
             all_flags.append("weapon_floor")
@@ -195,7 +195,7 @@ class ThreatScoreEngine:
 
         final_score = min(100, final_score)
 
-        # ── Escalation ────────────────────────────────────────────────────────
+        # Escalation 
         if final_score >= ESCALATION_EMERGENCY:
             escalation = "EMERGENCY"
         elif final_score >= ESCALATION_ALERT:
@@ -205,20 +205,20 @@ class ThreatScoreEngine:
         else:
             escalation = "NONE"
 
-        # ── User away: bump escalation one level up ───────────────────────────
+        # User away: bump escalation one level up 
         if user_away and escalation != "NONE":
             original   = escalation
             escalation = ESCALATION_BUMP[escalation]
             if escalation != original:
                 all_flags.append(f"away_escalation_bump:{original}->{escalation}")
 
-        # ── Social search (unknown face, medium+ threat) ──────────────────────
+        # Social search (unknown face, medium+ threat) 
         trigger_social = (
             not is_known_danger and
             final_score >= SOCIAL_SEARCH_THRESHOLD
         )
 
-        breakdown = {
+        breakdown = { #Dict
             "behavior"  : behavior_score,
             "violence"  : violence_score,
             "weapon"    : weapon_score,
@@ -235,7 +235,7 @@ class ThreatScoreEngine:
             breakdown=breakdown, user_away=user_away
         )
 
-    def score_from_results(self,
+    def score_from_results(self, #Hash map
                            persons           : list,
                            behavior_results  : dict,
                            violence_result,
@@ -260,7 +260,7 @@ class ThreatScoreEngine:
                 is_known_danger = True
                 face_flags.append(f"known:{fr['match'].get('name','?')}")
 
-        scores = []
+        scores = [] #Sorting
         for person in persons:
             b_result  = behavior_results.get(person.id)
             b_score   = b_result.score if b_result else 0

@@ -12,7 +12,7 @@ Starts the NxV security system:
 import os
 import sys
 
-# ── Startup banner ────────────────────────────────────────────────────────────
+# Startup banner
 print("""
 ███╗   ██╗██╗  ██╗██╗   ██╗
 ████╗  ██║╚██╗██╔╝██║   ██║
@@ -23,7 +23,7 @@ print("""
 NxV — Next Vision Security System
 """)
 
-# ── Camera ────────────────────────────────────────────────────────────────────
+# ── Camera 
 print("[NxV] Starting camera...")
 try:
     from camera.input import Camera
@@ -34,19 +34,19 @@ except Exception as e:
     print("  Make sure picamera2 is installed and camera is enabled.")
     sys.exit(1)
 
-# ── Motion detector ───────────────────────────────────────────────────────────
+# Motion detector 
 print("[NxV] Starting motion detector...")
 from detection.motion import MotionDetector
 motion_detector = MotionDetector(min_area=1500)
 print("[NxV] Motion detector OK")
 
-# ── Evidence packager ─────────────────────────────────────────────────────────
+# Evidence packager 
 print("[NxV] Starting evidence packager...")
 from utils.evidence import EvidencePackager
 evidence_packager = EvidencePackager()
 print("[NxV] Evidence packager OK")
 
-# ── Flask stream app ──────────────────────────────────────────────────────────
+# Flask stream app 
 print("[NxV] Loading stream and all AI modules...")
 from camera.stream import app, escalation_engine
 from camera.stream import start_pipeline
@@ -65,7 +65,7 @@ _t.Thread(target=lambda: [None for _ in _gf()], daemon=True).start()
 
 print("[NxV] All modules loaded OK")
 
-# ── Wire evidence packager into escalation ────────────────────────────────────
+# Wire evidence packager into escalation 
 # Monkey-patch escalation engine to save evidence on ALERT/EMERGENCY
 _original_handle = escalation_engine.handle
 
@@ -88,7 +88,7 @@ def handle_with_evidence(threat_score, user_away=False):
 
 escalation_engine.handle = handle_with_evidence
 
-# ── Print startup info ────────────────────────────────────────────────────────
+# Print startup info 
 import socket
 try:
     hostname = socket.gethostname()
@@ -108,9 +108,16 @@ print(f"""
   Press Ctrl+C to stop
 """)
 
+    
+from utils.security import (
+    rate_limit, sanitize_name, sanitize_phone,
+    sanitize_string, sanitize_integer,
+    validate_json_payload, check_payload_size,
+    add_security_headers, InputError
+)
 
 
-# ── Start server ──────────────────────────────────────────────────────────────
+# Start server 
 if __name__ == "__main__":
     app.run(
         host       = "0.0.0.0",
