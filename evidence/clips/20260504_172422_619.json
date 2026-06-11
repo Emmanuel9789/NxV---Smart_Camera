@@ -1,0 +1,13 @@
+{
+  "id": "20260504_172422_619",
+  "path": "/home/emmanuel/camera_project/evidence/clips/20260504_172422_619.avi",
+  "url": "/clip/20260504_172422_619",
+  "time": "05:24 PM",
+  "date": "May 04, 2026",
+  "timestamp": "2026-05-04T17:24:22.619952",
+  "duration": 3.2,
+  "escalation": "ALERT",
+  "flagged": false,
+  "keep_forever": false,
+  "delete_after": "2026-05-11T17:24:40.646626"
+}
