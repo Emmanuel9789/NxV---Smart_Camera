@@ -1,5 +1,5 @@
 """
-Hard rules (bypass weighted scoring):
+Hard rules:
   - Weapon aimed at camera       → EMERGENCY immediately
   - Break-in attempt at night    → EMERGENCY immediately
   - Known dangerous person       → minimum ALERT always
@@ -64,7 +64,7 @@ PASSING_MAX_DWELL = 4.0
 PASSING_MIN_SPEED = 80.0
 
 
-class ThreatScoreEngine: #Sorting
+class ThreatScoreEngine: 
 
     def score(self,
               person_id        : int,
@@ -162,6 +162,8 @@ class ThreatScoreEngine: #Sorting
             t_score        * WEIGHT_TIME
         )
         final_score = min(100, int(round(weighted)))
+        
+        
 
         # User away: add bonus + enforce minimum 
         if user_away:
@@ -211,7 +213,7 @@ class ThreatScoreEngine: #Sorting
             escalation = ESCALATION_BUMP[escalation]
             if escalation != original:
                 all_flags.append(f"away_escalation_bump:{original}->{escalation}")
-
+                
         # Social search (unknown face, medium+ threat) 
         trigger_social = (
             not is_known_danger and
@@ -234,14 +236,56 @@ class ThreatScoreEngine: #Sorting
             trigger_social_search=trigger_social,
             breakdown=breakdown, user_away=user_away
         )
+        
+        
+    def apply_vehicle_boost( self,
+        base_score         : float,
+        vehicle_behavior_results : dict,
+        person_behavior_results  : dict,
+        ) -> tuple[float, list[str]]:
+        
+        if not vehicle_behavior_results:
+            return base_score, []
+        # Find the most suspicious vehicle
+        # This is an implicit max-heap operation — same pattern
+        # as threat priority sort but over vehicles
+        
+        top_vehicle = max(
+        vehicle_behavior_results.values(),
+        key=lambda r: r.score
+        )
 
-    def score_from_results(self, #Hash map
+        if top_vehicle.score < 10:
+            return base_score, []
+
+        # Base vehicle boost — proportional to vehicle score
+        # Cap at 30 so a parked car alone can't cause EMERGENCY
+        vehicle_boost = min(30, top_vehicle.score // 3)
+        vehicle_flags = list(top_vehicle.flags)
+
+        # Double the boost if a person is ALSO loitering
+        # Vehicle + person = coordinated suspicious activity
+        person_loitering = any(
+            'loitering' in flag
+            for result in person_behavior_results.values()
+            for flag in (result.flags if hasattr(result, 'flags') else [])
+        )
+
+        if person_loitering and top_vehicle.score > 20:
+            vehicle_boost = int(vehicle_boost * 1.8)
+            vehicle_flags.append('vehicle+person_coordination')
+
+        boosted = min(100, base_score + vehicle_boost)
+        return boosted, vehicle_flags
+
+    def score_from_results(self, 
                            persons           : list,
                            behavior_results  : dict,
                            violence_result,
                            weapon_detections : list,
                            face_results      : list,
                            door_zone         : tuple = None,
+                           vehicle_behavior_results = None,
                            user_away         : bool  = False) -> list:
 
         weapon_count    = len(weapon_detections)
@@ -290,6 +334,15 @@ class ThreatScoreEngine: #Sorting
                 user_away       = user_away,
             )
             scores.append(result)
+            # Apply vehicle boost to each person's score
+            if vehicle_behavior_results:
+                result.final_score, v_flags = self.apply_vehicle_boost(
+                    result.final_score,
+                    vehicle_behavior_results,
+                    behavior_results,
+                )
+                if v_flags:
+                    result.all_flags.extend(v_flags)
 
         scores.sort(key=lambda s: s.final_score, reverse=True)
         return scores

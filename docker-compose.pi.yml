@@ -25,6 +25,8 @@ services:
       - ./evidence:/app/evidence
       - ./nxv.db:/app/nxv.db
       - ./datasets:/app/datasets
+      - /usr/lib/python3/dist-packages/picamera2:/usr/local/lib/python3.11/site-packages/picamera2
+      - /usr/lib/python3/dist-packages/libcamera:/usr/local/lib/python3.11/site-packages/libcamera
     devices:
       - /dev/video0:/dev/video0
     group_add:

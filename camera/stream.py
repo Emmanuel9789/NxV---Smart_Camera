@@ -26,6 +26,9 @@ from ai.neighborhood import NeighborhoodNetwork
 from alerts.notification_tiers import NotificationManager, NotificationEvent
 from ai.safe_zone import SafeZoneManager
 from ai.predictive import PredictiveModel
+from detection.vehicle        import detect_vehicles
+from tracking.vehicle_tracker import VehicleTracker
+from ai.vehicle_behavior      import VehicleBehaviorAnalyzer
 
 
 
@@ -97,21 +100,41 @@ delivery_detector    = DeliveryDetector()
 neighborhood_network = NeighborhoodNetwork()
 notification_manager = NotificationManager()
 neighborhood_network.start()
+vehicle_tracker  = VehicleTracker()
+vehicle_behavior = VehicleBehaviorAnalyzer()
+
 
 # Config
 # Door zone (x, y, w, h) in pixels — adjust to where door appears
 DOOR_ZONE = None
 
+vehicle_behavior.set_door_zone(DOOR_ZONE)
+
+
 FACE_EVERY_N_FRAMES     = 3
 BEHAVIOR_EVERY_N_FRAMES = 5
 ESCALATION_COOLDOWN     = 10
+
+_capture_session = {
+    'active'    : False,
+    'person_id' : None,
+    'name'      : None,
+    'frames'    : [],
+    'started_at': None,
+    'target'    : 15,
+}
 
 # Runtime state 
 _frame_count        = 0
 _last_escalation    = 0
 _last_face_results  = []
 _last_threat_scores = []
+_top_vehicle_score  = 0   
+_top_vehicle_flags  = []    
 _user_away          = False
+_vehicle_detections_async = []
+_vehicle_lock             = threading.Lock()
+_vehicle_thread           = None
 
 
 def generate_frames():
@@ -155,6 +178,28 @@ def generate_frames():
         with _weapon_lock:
             
             weapon_detections = list(_weapon_detections_async)
+            
+        # Vehicle detection 
+        global _vehicle_thread, _vehicle_detections_async
+        if motion_detected:
+            if _vehicle_thread is None or not _vehicle_thread.is_alive():
+                f = frame.copy()
+                _vehicle_thread = threading.Thread(
+                    target=_run_vehicle_detection, args=(f,), daemon=True
+                )
+                _vehicle_thread.start()
+
+        with _vehicle_lock:
+            vehicle_detections = list(_vehicle_detections_async)
+            
+        #Vehicle tracking 
+        vehicles = vehicle_tracker.update(vehicle_detections)
+
+        # Vehicle behavior analysis 
+        vehicle_behavior_results = {}
+        if vehicles and _frame_count % BEHAVIOR_EVERY_N_FRAMES == 0:
+            vehicle_behavior_results = vehicle_behavior.analyze(vehicles)
+
 
         # 4 Face detection
         if motion_detected and _frame_count % 5 == 0:
@@ -168,6 +213,28 @@ def generate_frames():
             tracking_boxes.append((x1, y1, x2 - x1, y2 - y1))
 
         persons = person_tracker.update(tracking_boxes, timestamp=time.time())
+        
+        # Vehicle bounding boxes + labels
+        frame = vehicle_tracker.draw(frame, vehicles)
+        VEHICLE_COLOR = {
+        'slow_roll' : (0, 200, 255),   # yellow
+        'parked'    : (0, 100, 255),   # orange
+        'circling'  : (0, 34, 255),    # red
+        'blocking'  : (0, 34, 255),    # red
+        'normal'    : (0, 200, 80),    # green
+        }
+
+        for result in vehicle_behavior_results.values():
+            if result.score > 10 and result.flags:
+                v = vehicle_tracker.get_vehicle(result.vehicle_id)
+                if v and not v.lost:
+                    x1, y1, x2, y2 = v.bbox
+                    color   = VEHICLE_COLOR.get(result.behavior, (200, 200, 200))
+                    label   = f"V:{result.behavior} {result.score}"
+                    cv2.putText(frame, label,
+                                (x1, y2 + 14),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.38,
+                                color, 1, cv2.LINE_AA)
 
         # 6 + 7 Behavior + violence (every N frames) 
         behavior_results = {}
@@ -187,8 +254,20 @@ def generate_frames():
                 face_results      = face_results,
                 door_zone         = DOOR_ZONE,
                 user_away         = _user_away,
+                vehicle_behavior_results = vehicle_behavior_results,
             )
         threat_scores = _last_threat_scores
+        # Vehicle summary for status endpoint and HUD
+        
+        global _top_vehicle_score, _top_vehicle_flags
+        top_vehicle_score = 0
+        top_vehicle_flags = []
+        
+        if vehicle_behavior_results:
+            best = max(vehicle_behavior_results.values(),
+                    key=lambda r: r.score)
+            top_vehicle_score = best.score
+            top_vehicle_flags = best.flags
         
         
         # Log motion history
@@ -277,7 +356,8 @@ def generate_frames():
                     score      = top.final_score,
                     flags      = top.all_flags,
                 )
-        
+                
+
         #  Delivery detection 
         delivery_result = delivery_detector.analyze(frame, persons, motion_boxes)
         if delivery_result.is_delivery and motion_detected:
@@ -450,6 +530,14 @@ def start_pipeline():
     t = threading.Thread(target=run_pipeline, daemon=True)
     t.start()
     print("[NxV] Detection pipeline running in background")
+
+
+def _run_vehicle_detection(frame):
+    """Producer — runs in background thread."""
+    global _vehicle_detections_async
+    result = detect_vehicles(frame)
+    with _vehicle_lock:
+        _vehicle_detections_async = result
 
 
 # Flask routes 
@@ -707,6 +795,9 @@ def status():
         },
         'clip_count' : len(get_clips(limit=10000)),
         'alert_count': len(get_alerts(limit=10000)),
+        'vehicles'      : vehicle_tracker.active_count(),
+        'vehicle_score' : _top_vehicle_score,
+        'vehicle_flags' : _top_vehicle_flags,
     })
 
 

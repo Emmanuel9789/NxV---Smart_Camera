@@ -50,7 +50,6 @@ print("[NxV] Evidence packager OK")
 print("[NxV] Loading stream and all AI modules...")
 from camera.stream import app, escalation_engine
 from camera.stream import start_pipeline
-start_pipeline()
 
 
 # Inject dependencies into stream app
@@ -58,10 +57,10 @@ app.camera           = camera
 app.motion_detector  = motion_detector
 app.evidence         = evidence_packager
 
-# Start detection pipeline background thread
-import threading as _t
-from camera.stream import generate_frames as _gf
-_t.Thread(target=lambda: [None for _ in _gf()], daemon=True).start()
+#Start Pipeline
+start_pipeline()
+
+
 
 print("[NxV] All modules loaded OK")
 

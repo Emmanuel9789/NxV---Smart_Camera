@@ -8,7 +8,7 @@ Signals detected:
  Scanning     : slow movement while changing direction frequently
  Fast approach: moving quickly toward the camera
 """
-
+ 
 import numpy as np
 
 
