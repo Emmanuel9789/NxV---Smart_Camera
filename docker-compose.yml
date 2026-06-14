@@ -1,0 +1,20 @@
+services:
+  nxv-relay:
+    build: .
+    container_name: nxv-relay
+    restart: unless-stopped
+    ports:
+      - "6000:6000"
+    environment:
+      NXV_NETWORK_KEY: ${NXV_NETWORK_KEY}
+    volumes:
+      - relay-data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:6000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  relay-data:
