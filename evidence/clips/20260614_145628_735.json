@@ -1,0 +1,13 @@
+{
+  "id": "20260614_145628_735",
+  "path": "/home/emmanuel/camera_project/evidence/clips/20260614_145628_735.avi",
+  "url": "/clip/20260614_145628_735",
+  "time": "02:56 PM",
+  "date": "Jun 14, 2026",
+  "timestamp": "2026-06-14T14:56:28.735569",
+  "duration": 4.3,
+  "escalation": "ALERT",
+  "flagged": false,
+  "keep_forever": false,
+  "delete_after": "2026-06-21T14:56:31.502956"
+}
