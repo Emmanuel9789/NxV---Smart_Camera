@@ -21,6 +21,14 @@ Built as both an independent project, with every major data structure implemente
 
 ---
 
+## Mobile app
+
+The NxV mobile app is a separate React Native project.
+
+→ [NxVMobile on GitHub](https://github.com/YOUR_USERNAME/NxVMobile)
+
+---
+
 ## Stack
 
 | Layer | Technology |
