@@ -1,6 +1,6 @@
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import re, time, uuid, json, glob
+import re, time, uuid, json, glob, subprocess
 import threading
 from datetime import datetime
 
@@ -10,6 +10,8 @@ from flask import Flask, Response, send_file, request, jsonify
 
 app = Flask(__name__)
 
+_snooze_until = 0  # timestamp when snooze ends
+_start_time = time.time()
 
 from utils.security import (
     rate_limit, sanitize_name, sanitize_phone,
@@ -72,6 +74,7 @@ from alerts.escalation    import EscalationEngine
 
 
 _latest_frame = None
+_latest_thumbnail = None
 _pipeline_lock = threading.Lock()
 
 
@@ -140,6 +143,7 @@ _vehicle_thread           = None
 def generate_frames():
     global _frame_count, _last_escalation
     global _last_face_results, _last_threat_scores, _user_away
+    global _latest_thumbnail
 
     while True:
         t_start       = time.time()
@@ -309,7 +313,7 @@ def generate_frames():
             
             
         # Predictive model — log event 
-        if persons and motion_detected:
+        if persons and motion_detected and _frame_count % 30 == 0:
             top_ts = _last_threat_scores[0] if _last_threat_scores else None
             predictive_model.log_event(
                 hour       = datetime.now().hour,
@@ -324,31 +328,33 @@ def generate_frames():
                 fr.get('match') for fr in face_results
             ) if face_results else False
 
-            p_boost, p_reason = predictive_model.get_score_boost(
-                hour          = datetime.now().hour,
-                current_dwell = persons[0].dwell_time if persons else 0,
-                is_new_face   = is_new_face,
-            )
+          #  p_boost, p_reason = predictive_model.get_score_boost(
+           #     hour          = datetime.now().hour,
+           #     current_dwell = persons[0].dwell_time if persons else 0,
+           #     is_new_face   = is_new_face,
+           # )
 
-            if p_boost > 0 and _last_threat_scores:
-                _last_threat_scores[0].final_score = min(
-                    100,
-                    _last_threat_scores[0].final_score + p_boost
-                )
-                if p_reason:
-                    _last_threat_scores[0].all_flags.append(
-                        f"predict:{p_reason}"
-                    )
-                print(f"[NxV Predict] Boost +{p_boost} → {p_reason}")    
-        
+           # if p_boost > 0 and _last_threat_scores:
+           #     _last_threat_scores[0].final_score = min(
+           #         100,
+           #         _last_threat_scores[0].final_score + p_boost
+           #     )
+           #     if p_reason:
+           #         _last_threat_scores[0].all_flags.append(
+           #             f"predict:{p_reason}"
+           #         )
+           #     print(f"[NxV Predict] Boost +{p_boost} → {p_reason}")    
+      
 
         # 9 Escalation (rate limited) 
+
         now = time.time()
         if (threat_scores and
                 now - _last_escalation >= ESCALATION_COOLDOWN):
             top = threat_scores[0]
             if top.escalation != "NONE":
                 escalation_engine.handle(top, user_away=_user_away)
+
                 _last_escalation = now
                 
                 save_alert(
@@ -416,7 +422,7 @@ def generate_frames():
         
         # Social media search (unknown faces at medium+ threat) 
         for ts in threat_scores:
-            if ts.trigger_social_search:
+            if ts.trigger_social_search and ts.escalation == 'EMERGENCY':
                 person = person_tracker.get_person(ts.person_id)
                 if person and face_results:
                     for fr in face_results:
@@ -508,9 +514,12 @@ def generate_frames():
                         cv2.FONT_HERSHEY_SIMPLEX, 0.36, c, 1, cv2.LINE_AA)
 
         
-        
-        # Fix colors — convert BGR to RGB for correct color display
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # Update thumbnail every 30 frames
+        if _frame_count % 30 == 0:
+            small = cv2.resize(frame, (240, 180))
+            _, tbuf = cv2.imencode('.jpg', small, [cv2.IMWRITE_JPEG_QUALITY, 40])
+            _latest_thumbnail = tbuf.tobytes()
+
         
         # 11 Encode and stream 
         _, buffer = cv2.imencode('.jpg', frame,
@@ -1016,7 +1025,6 @@ def snapshot_feed():
     """Single JPEG frame — used by mobile app polling every 500ms."""
     try:
         frame = app.camera.get_frame()
-        import cv2
         _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
         return Response(
             buffer.tobytes(),
@@ -1174,6 +1182,96 @@ def manifest():
     )
 
 
+@app.route('/snooze/<int:minutes>', methods=['POST'])
+@rate_limit
+def snooze_route(minutes):
+    global _snooze_until
+    if minutes < 0 or minutes > 480:
+        return jsonify({'error': 'Invalid duration'}), 400
+    _snooze_until = time.time() + (minutes * 60)
+    return jsonify({'status': 'snoozed', 'until': _snooze_until, 'minutes': minutes})
+
+@app.route('/snooze/cancel', methods=['POST'])
+@rate_limit
+def snooze_cancel():
+    global _snooze_until
+    _snooze_until = 0
+    return jsonify({'status': 'cancelled'})
+
+@app.route('/health')
+def health():
+    import psutil
+    cpu   = psutil.cpu_percent(interval=0.1)
+    ram   = psutil.virtual_memory()
+    disk  = psutil.disk_usage('/')
+    try:
+        temp_raw = subprocess.check_output(
+            ['vcgencmd', 'measure_temp'], text=True
+        ).strip()
+        temp = temp_raw.replace('temp=', '').replace("'C", '')
+    except Exception:
+        temp = 'unknown'
+    return jsonify({
+        'status'      : 'ok',
+        'uptime_secs' : int(time.time() - _start_time),
+        'cpu_pct'     : cpu,
+        'ram_used_mb' : round(ram.used / 1024 / 1024),
+        'ram_total_mb': round(ram.total / 1024 / 1024),
+        'disk_used_gb': round(disk.used / 1024 / 1024 / 1024, 1),
+        'disk_free_gb': round(disk.free / 1024 / 1024 / 1024, 1),
+        'temp_c'      : temp,
+        'camera'      : 'ok',
+        'pipeline'    : 'ok' if _latest_frame else 'starting',
+        'version'     : '1.0.0',
+    })
+
+
+@app.route('/thumbnail_feed')
+def thumbnail_feed():
+    try:
+        if not _latest_thumbnail:
+            return jsonify({'error': 'Pipeline starting'}), 503
+        return Response(
+            _latest_thumbnail,
+            mimetype='image/jpeg',
+            headers={'Cache-Control': 'no-cache, no-store', 'Pragma': 'no-cache'}
+        )
+    except Exception:
+        return jsonify({'error': 'Thumbnail not available'}), 503
+
+
+@app.route('/deterrent/trigger/<level>', methods=['POST'])
+@rate_limit
+def manual_deterrent(level):
+    if level not in ('ALERT', 'EMERGENCY'):
+        return jsonify({'error': 'Invalid level'}), 400
+    escalation_engine.deterrent.trigger(level)
+    if level == 'EMERGENCY':
+        escalation_engine.notifier.notify_contact(
+            100, 'EMERGENCY', ['manual_trigger'],
+            owner_name=os.environ.get('NXV_OWNER_PHONE', 'Owner')
+        )
+    return jsonify({'status': 'triggered', 'level': level})
+
+_live_session_active = False
+
+@app.route('/live_session/start', methods=['POST'])
+@rate_limit
+def live_session_start():
+    global _live_session_active
+    _live_session_active = True
+    return jsonify({'status': 'recording'})
+
+
+@app.route('/live_session/stop', methods=['POST'])
+@rate_limit
+def live_session_stop():
+    global _live_session_active
+    _live_session_active = False
+    clip_recorder.force_save('LIVE_VIEW', False)
+    return jsonify({'status': 'saved'})
+
+
 
 # HELPER
 
@@ -1189,3 +1287,4 @@ def _flags_to_desc(flags):
         if 'face:masked'       in f: return 'Masked person'
         if 'behavior:loitering'in f: return 'Loitering detected'
     return 'Suspicious activity'
+

@@ -27,7 +27,7 @@ NxV — Next Vision Security System
 print("[NxV] Starting camera...")
 try:
     from camera.input import Camera
-    camera = Camera(resolution=(256, 192))
+    camera = Camera(resolution=(480, 360))
     print("[NxV] Camera OK")
 except Exception as e:
     print(f"[NxV] Camera failed: {e}")
@@ -37,7 +37,7 @@ except Exception as e:
 # Motion detector 
 print("[NxV] Starting motion detector...")
 from detection.motion import MotionDetector
-motion_detector = MotionDetector(min_area=1500)
+motion_detector = MotionDetector(min_area=3000)
 print("[NxV] Motion detector OK")
 
 # Evidence packager 

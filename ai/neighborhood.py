@@ -466,9 +466,17 @@ class NeighborhoodNetwork:
         return None
 
     def _sync_loop(self):
+        _fail_count = 0
         while True:
-            time.sleep(SYNC_INTERVAL)
-            self._pull_from_relay()
+            # Back off exponentially when relay is unreachable
+            # Normal: SYNC_INTERVAL, After failures: up to 5 minutes max
+            wait = min(SYNC_INTERVAL * (2 ** _fail_count), 300)
+            time.sleep(wait)
+            success = self._pull_from_relay()
+            if success:
+                _fail_count = 0
+            else:
+                _fail_count = min(_fail_count + 1, 5)
 
     def _pull_from_relay(self):
         if not self._enabled or not REQUESTS_OK:
@@ -525,7 +533,9 @@ class NeighborhoodNetwork:
                             self._trusted[pid] = member
 
         except Exception as e:
-            print(f"[NxV Network] Sync error: {e}")
+            print(f"[NxV Network] Relay unreachable — will retry later")
+            return False
+        return True
 
     def _sign(self, data: str) -> str:
         return hashlib.sha256(
