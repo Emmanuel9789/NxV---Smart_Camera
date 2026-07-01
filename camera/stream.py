@@ -6,6 +6,7 @@ from datetime import datetime
 import cv2
 from flask import Flask, Response, send_file, request, jsonify
 from utils.logger import log
+from utils.push_notifications import push_manager
 
 app = Flask(__name__)
 from flask import Blueprint
@@ -369,6 +370,19 @@ def generate_frames():
                     escalation = top.escalation,
                     score      = top.final_score,
                     flags      = top.all_flags,
+                )
+                
+                # Send push notification
+                desc = _flags_to_desc(top.all_flags)
+                push_manager.send_alert(
+                    escalation = top.escalation,
+                    title      = f'NxV {top.escalation}',
+                    body       = f'{desc} — Threat score: {top.final_score}',
+                    data       = {
+                        'score'    : top.final_score,
+                        'flags'    : ','.join(top.all_flags[:3]),
+                        'camera_id': os.environ.get('NXV_CAMERA_ID', 'front-door'),
+                    }
                 )
                 
 
@@ -735,7 +749,7 @@ def clips_storage():
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# ALERTS + MOTION LOG
+# ALERTS + MOTION LOG + Notifications
 # ══════════════════════════════════════════════════════════════════════════════
 
 @app.route('/alerts_history')
@@ -761,6 +775,31 @@ def motion_history_route():
 def evidence_list():
     clips = get_clips(filter_type='threats', limit=30)
     return jsonify(clips)
+
+# ── PUSH NOTIFICATION DEVICE REGISTRATION ────────────────────────────────
+
+@app.route('/push/register', methods=['POST'])
+@rate_limit
+@require_auth
+def push_register():
+    data, err = validate_json_payload(required_fields=['token'])
+    if err:
+        return err
+    token       = sanitize_string(data.get('token', ''), 'token', max_len=500)
+    device_name = sanitize_string(data.get('device_name', ''), 'device_name',
+                                  max_len=100, allow_empty=True)
+    uid = getattr(request, 'firebase_user', {}).get('uid', 'unknown')
+    push_manager.register_token(uid, token, device_name)
+    return jsonify({'status': 'registered'})
+
+
+@app.route('/push/unregister', methods=['POST'])
+@rate_limit
+@require_auth
+def push_unregister():
+    uid = getattr(request, 'firebase_user', {}).get('uid', 'unknown')
+    push_manager.unregister_token(uid)
+    return jsonify({'status': 'unregistered'})
 
 
 # ══════════════════════════════════════════════════════════════════════════════
