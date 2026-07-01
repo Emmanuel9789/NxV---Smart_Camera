@@ -3,10 +3,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import re, time, uuid, json, glob, subprocess
 import threading
 from datetime import datetime
-
-
 import cv2
 from flask import Flask, Response, send_file, request, jsonify
+from utils.logger import log
 
 app = Flask(__name__)
 
@@ -359,6 +358,11 @@ def generate_frames():
 
                 _last_escalation = now
                 
+                log.threat('escalation', f'{top.escalation} triggered',
+                           score=top.final_score,
+                           flags=top.all_flags,
+                           person_id=top.person_id)
+                
                 save_alert(
                     escalation = top.escalation,
                     score      = top.final_score,
@@ -369,7 +373,7 @@ def generate_frames():
         #  Delivery detection 
         delivery_result = delivery_detector.analyze(frame, persons, motion_boxes)
         if delivery_result.is_delivery and motion_detected:
-            print(f"[NxV Delivery] {delivery_result.notification_label}")
+            log.event('delivery', delivery_result.notification_label)
 
         #  Neighborhood network face check 
         if face_results and neighborhood_network.is_enabled:
@@ -390,9 +394,8 @@ def generate_frames():
                                             if threat_scores else [])),
                     )
                     if net_result:
-                        print(f"[NxV Network] {net_result['layer']}: "
-                            f"{net_result['name']} "
-                            f"(boost: {net_result['score_boost']})")
+                        log.event('network', 'Face match', name=net_result['name'],
+                                  boost=net_result['score_boost'])
                         # Apply score boost
                         if threat_scores:
                             threat_scores[0].final_score = min(100,
