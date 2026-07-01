@@ -20,6 +20,7 @@ from utils.security import (
     add_security_headers, audit_on_startup, InputError 
 )
 from utils.firebase_auth import require_auth
+from utils.cache import _cache
 app.after_request(add_security_headers)
 
 
@@ -680,6 +681,7 @@ def delete_contact_route(contact_id):
 # ══════════════════════════════════════════════════════════════════════════════
 
 @app.route('/clips')
+@_cache.cache_route(ttl_seconds=5)
 def clips_list():
     f = request.args.get('filter', 'all')
     # Whitelist filter values
@@ -732,6 +734,7 @@ def clips_storage():
 # ══════════════════════════════════════════════════════════════════════════════
 
 @app.route('/alerts_history')
+@_cache.cache_route(ttl_seconds=10)
 def alerts_history():
     esc   = request.args.get('escalation', '')
     # Whitelist escalation values
@@ -803,6 +806,7 @@ def settings_route():
 # ══════════════════════════════════════════════════════════════════════════════
 
 @app.route('/status')
+@_cache.cache_route(ttl_seconds=2)
 def status():
     top    = _last_threat_scores[0] if _last_threat_scores else None
     now    = time.time()
