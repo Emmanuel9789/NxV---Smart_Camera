@@ -19,6 +19,7 @@ from utils.security import (
     validate_json_payload, check_payload_size,
     add_security_headers, audit_on_startup, InputError 
 )
+from utils.firebase_auth import require_auth
 app.after_request(add_security_headers)
 
 
@@ -565,6 +566,12 @@ def trusted_route():
     if request.method == 'GET':
         # Merge DB trusted persons + safe_zone embeddings into one response
         return jsonify(safe_zone.get_trusted_list())
+    
+    from utils.firebase_auth import verify_token
+    auth_header = request.headers.get('Authorization', '')
+    if auth_header.startswith('Bearer '):
+        if not verify_token(auth_header[7:]):
+            return jsonify({'error': 'Invalid token'}), 401
 
     # POST 
     if request.method == 'POST':
@@ -620,6 +627,12 @@ def contacts_route():
 
     if request.method == 'GET':
         return jsonify(get_contacts())
+    
+    from utils.firebase_auth import verify_token
+    auth_header = request.headers.get('Authorization', '')
+    if auth_header.startswith('Bearer '):
+        if not verify_token(auth_header[7:]):
+            return jsonify({'error': 'Invalid token'}), 401
 
     data, err = validate_json_payload()
     if err:
@@ -761,6 +774,12 @@ def settings_route():
             k: (v == 'true' if v in ('true', 'false') else v)
             for k, v in s.items()
         })
+        
+    from utils.firebase_auth import verify_token
+    auth_header = request.headers.get('Authorization', '')
+    if auth_header.startswith('Bearer '):
+        if not verify_token(auth_header[7:]):
+            return jsonify({'error': 'Invalid token'}), 401
 
     data, err = validate_json_payload()
     if err:
@@ -816,6 +835,7 @@ def status():
 
 @app.route('/set_away/<int:value>')
 @rate_limit
+@require_auth
 def set_away_route(value):
     global _user_away
     if value not in (0, 1):
@@ -830,6 +850,7 @@ def set_away_route(value):
 
 @app.route('/acknowledge/<int:person_id>')
 @rate_limit
+@require_auth
 def acknowledge(person_id):
     global _last_threat_scores
     if person_id < 0 or person_id > 9999:
@@ -945,6 +966,12 @@ def register_face_cancel():
 def flagged_persons():
     if request.method == 'GET':
         return jsonify(get_all_persons(flagged_only=True))
+    
+    from utils.firebase_auth import verify_token
+    auth_header = request.headers.get('Authorization', '')
+    if auth_header.startswith('Bearer '):
+        if not verify_token(auth_header[7:]):
+            return jsonify({'error': 'Invalid token'}), 401
 
     if request.method == 'POST':
         data, err = validate_json_payload(required_fields=['name'])
@@ -1193,6 +1220,7 @@ def snooze_route(minutes):
 
 @app.route('/snooze/cancel', methods=['POST'])
 @rate_limit
+@require_auth
 def snooze_cancel():
     global _snooze_until
     _snooze_until = 0
@@ -1242,6 +1270,7 @@ def thumbnail_feed():
 
 @app.route('/deterrent/trigger/<level>', methods=['POST'])
 @rate_limit
+@require_auth
 def manual_deterrent(level):
     if level not in ('ALERT', 'EMERGENCY'):
         return jsonify({'error': 'Invalid level'}), 400
@@ -1257,6 +1286,7 @@ _live_session_active = False
 
 @app.route('/live_session/start', methods=['POST'])
 @rate_limit
+@require_auth
 def live_session_start():
     global _live_session_active
     _live_session_active = True
@@ -1265,6 +1295,7 @@ def live_session_start():
 
 @app.route('/live_session/stop', methods=['POST'])
 @rate_limit
+@require_auth
 def live_session_stop():
     global _live_session_active
     _live_session_active = False
