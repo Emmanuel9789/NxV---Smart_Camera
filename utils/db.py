@@ -123,6 +123,18 @@ def init_db():
             updated_at    TEXT NOT NULL
         )
     """)
+    
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            uid          TEXT PRIMARY KEY,
+            email        TEXT NOT NULL,
+            display_name TEXT,
+            role         TEXT NOT NULL DEFAULT 'viewer',
+            invited_by   TEXT,
+            created_at   TEXT DEFAULT (datetime('now')),
+            last_seen    TEXT
+        )
+    ''')
 
     conn.commit()
     conn.close()
@@ -556,6 +568,54 @@ def migrate_existing_data():
             print(f"[NxV DB] Migrated {len(contacts_to_add)} contacts")
 
     print("[NxV DB] Migration complete")
+    
+# ════════════════════════════════════════════════════════════════
+# USERS
+# ════════════════════════════════════════════════════════════════
+
+def get_user(uid: str) -> dict | None:
+    conn = get_conn()
+    row  = conn.execute(
+        'SELECT * FROM users WHERE uid = ?', (uid,)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def upsert_user(uid: str, email: str, display_name: str,
+                role: str = 'viewer', invited_by: str = None):
+    conn = get_conn()
+    conn.execute('''
+        INSERT INTO users (uid, email, display_name, role, invited_by, last_seen)
+        VALUES (?, ?, ?, ?, ?, datetime('now'))
+        ON CONFLICT(uid) DO UPDATE SET
+            email        = excluded.email,
+            display_name = excluded.display_name,
+            last_seen    = datetime('now')
+    ''', (uid, email, display_name, role, invited_by))
+    conn.commit()
+    conn.close()
+
+def set_user_role(uid: str, role: str):
+    if role not in ('owner', 'admin', 'viewer'):
+        raise ValueError(f'Invalid role: {role}')
+    conn = get_conn()
+    conn.execute('UPDATE users SET role = ? WHERE uid = ?', (role, uid))
+    conn.commit()
+    conn.close()
+
+def get_all_users() -> list:
+    conn = get_conn()
+    rows = conn.execute(
+        'SELECT * FROM users ORDER BY created_at DESC'
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def delete_user(uid: str):
+    conn = get_conn()
+    conn.execute('DELETE FROM users WHERE uid = ?', (uid,))
+    conn.commit()
+    conn.close()    
 
 
 if __name__ == '__main__':

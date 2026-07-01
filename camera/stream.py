@@ -8,6 +8,8 @@ from flask import Flask, Response, send_file, request, jsonify
 from utils.logger import log
 
 app = Flask(__name__)
+from flask import Blueprint
+api_v1 = Blueprint('api_v1', __name__, url_prefix='/api/v1')
 
 _snooze_until = 0  # timestamp when snooze ends
 _start_time = time.time()
@@ -1311,6 +1313,67 @@ def live_session_stop():
 
 
 
+# ── API v1 versioned routes ───────────────────────────────────────────────
+# Forwards /api/v1/* to existing routes for API versioning compliance
+
+@api_v1.route('/status')
+def v1_status():
+    return status()
+
+@api_v1.route('/clips')
+def v1_clips():
+    return clips_list()
+
+@api_v1.route('/clip/<clip_id>')
+def v1_clip(clip_id):
+    return serve_clip(clip_id)
+
+@api_v1.route('/alerts_history')
+def v1_alerts():
+    return alerts_history()
+
+@api_v1.route('/contacts', methods=['GET', 'POST'])
+def v1_contacts():
+    return contacts_route()
+
+@api_v1.route('/contacts/<int:contact_id>', methods=['DELETE'])
+def v1_delete_contact(contact_id):
+    return delete_contact_route(contact_id)
+
+@api_v1.route('/settings', methods=['GET', 'POST'])
+def v1_settings():
+    return settings_route()
+
+@api_v1.route('/health')
+def v1_health():
+    return health()
+
+@api_v1.route('/thumbnail_feed')
+def v1_thumbnail():
+    return thumbnail_feed()
+
+@api_v1.route('/snapshot_feed')
+def v1_snapshot():
+    return snapshot_feed()
+
+@api_v1.route('/set_away/<int:value>')
+def v1_set_away(value):
+    return set_away_route(value)
+
+@api_v1.route('/deterrent/trigger/<level>', methods=['POST'])
+def v1_deterrent(level):
+    return manual_deterrent(level)
+
+@api_v1.route('/trusted', methods=['GET', 'POST', 'DELETE'])
+def v1_trusted():
+    return trusted_route()
+
+@api_v1.route('/flagged', methods=['GET', 'POST', 'DELETE'])
+def v1_flagged():
+    return flagged_persons()
+
+
+    
 # HELPER
 
 
@@ -1366,3 +1429,5 @@ def _flags_to_desc(flags):
             return 'Motion detected'
         return 'Suspicious activity'
 
+
+app.register_blueprint(api_v1)
