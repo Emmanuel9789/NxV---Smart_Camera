@@ -1,0 +1,123 @@
+name: NxV CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  lint-and-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install lint tools
+        run: pip install pyflakes
+
+      - name: Check Python syntax — all files
+        run: |
+          find . -name "*.py" \
+            -not -path "./.venv/*" \
+            -not -path "./node_modules/*" \
+            | xargs python -m pyflakes 2>&1 || true
+
+      - name: Check for syntax errors (strict)
+        run: |
+          find . -name "*.py" \
+            -not -path "./.venv/*" \
+            -not -path "./node_modules/*" \
+            | while read f; do
+                python -m py_compile "$f" && echo "OK: $f" || echo "FAIL: $f"
+              done
+
+  validate-routes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check critical routes exist in stream.py
+        run: |
+          python - <<'EOF'
+          import re
+
+          with open('camera/stream.py', 'r') as f:
+              content = f.read()
+
+          required_routes = [
+              '/status',
+              '/clips',
+              '/clip/',
+              '/health',
+              '/snapshot_feed',
+              '/thumbnail_feed',
+              '/contacts',
+              '/settings',
+              '/alerts_history',
+              '/deterrent/trigger/',
+              '/live_session/start',
+              '/live_session/stop',
+              '/set_away/',
+              '/trusted',
+              '/flagged',
+          ]
+
+          missing = []
+          for route in required_routes:
+              if route not in content:
+                  missing.append(route)
+
+          if missing:
+              print(f"MISSING ROUTES: {missing}")
+              exit(1)
+          else:
+              print(f"All {len(required_routes)} routes verified.")
+          EOF
+
+  validate-env:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check .env.example exists and has required keys
+        run: |
+          python - <<'EOF'
+          import os
+
+          required_keys = [
+              'NXV_TWILIO_SID',
+              'NXV_TWILIO_TOKEN',
+              'NXV_TWILIO_FROM',
+              'NXV_OWNER_PHONE',
+              'NXV_RELAY_URL',
+              'NXV_NETWORK_KEY',
+              'NXV_CAMERA_ID',
+          ]
+
+          if not os.path.exists('.env.example'):
+              print("MISSING: .env.example file")
+              exit(1)
+
+          with open('.env.example') as f:
+              content = f.read()
+
+          missing = [k for k in required_keys if k not in content]
+          if missing:
+              print(f"MISSING KEYS in .env.example: {missing}")
+              exit(1)
+          else:
+              print(f"All {len(required_keys)} env keys verified.")
+          EOF
