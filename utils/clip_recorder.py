@@ -23,9 +23,10 @@ from utils.db import save_clip as db_save_clip
 
 CLIPS_DIR        = '/home/emmanuel/camera_project/evidence/clips'
 CLIP_FPS         = 10
-CLIP_SIZE        = (320, 240)
+CLIP_SIZE        = (480, 360)
 MAX_CLIP_SECS    = 15
 PRE_BUFFER_SECS  = 2
+MIN_CLIP_SECS    = 5 
 AUTO_DELETE_DAYS = 7
 KEEP_LEVELS      = {"EMERGENCY"}
 
@@ -126,6 +127,10 @@ class ClipRecorder:
         if not self._recording or not self._frames:
             self._recording = False
             return
+        if len(self._frames) < MIN_CLIP_SECS * CLIP_FPS:  
+            self._recording = False                         
+            self._frames = []                               
+            return 
 
         frames     = list(self._frames)
         clip_id    = self._clip_id
@@ -146,8 +151,7 @@ class ClipRecorder:
             video_path = os.path.join(CLIPS_DIR, f'{clip_id}.mp4')
             meta_path  = os.path.join(CLIPS_DIR, f'{clip_id}.json')
 
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')
-            video_path = video_path.replace('.mp4', '.avi')
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             writer = cv2.VideoWriter(video_path, fourcc, CLIP_FPS, CLIP_SIZE)
             for frame in frames:
                 writer.write(frame)

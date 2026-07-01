@@ -1312,14 +1312,54 @@ def live_session_stop():
 
 
 def _flags_to_desc(flags):
-    for f in flags:
-        if 'AIMING'            in f: return 'Weapon aimed at camera'
-        if 'BREAK_IN'          in f: return 'Break-in attempt'
-        if 'weapon:gun'        in f: return 'Gun detected'
-        if 'weapon:knife'      in f: return 'Knife detected'
-        if 'weapon:'           in f: return 'Weapon detected'
-        if 'face:known'        in f: return 'Known dangerous person'
-        if 'face:masked'       in f: return 'Masked person'
-        if 'behavior:loitering'in f: return 'Loitering detected'
-    return 'Suspicious activity'
+    def _flags_to_desc(flags):
+        if not flags:
+            return 'Motion detected'
+        # Priority order — highest threat first
+        # Hard overrides
+        for f in flags:
+            if 'AIMING'   in f: return 'Weapon aimed at camera'
+            if 'BREAK_IN' in f: return 'Break-in attempt'
+        # Weapons
+        for f in flags:
+            if 'weapon:gun'   in f: return 'Gun detected'
+            if 'weapon:knife' in f: return 'Knife detected'
+            if 'weapon:'      in f: return 'Weapon detected'
+        # Face matches
+        for f in flags:
+            if 'face:flagged' in f: return 'Known dangerous person'
+            if 'face:known'   in f: return 'Known dangerous person'
+            if 'face:masked'  in f: return 'Masked person'
+        # Behavior
+        for f in flags:
+            if 'behavior:loitering'  in f: return 'Loitering detected'
+            if 'behavior:pacing'     in f: return 'Suspicious pacing'
+            if 'behavior:aggressive' in f: return 'Aggressive behavior'
+            if 'behavior:'           in f: return 'Suspicious behavior'
+        # Violence
+        for f in flags:
+            if 'violence:' in f: return 'Violent behavior detected'
+        # Vehicle
+        for f in flags:
+            if 'vehicle:slow_roll' in f: return 'Slow-moving vehicle'
+            if 'vehicle:circling'  in f: return 'Vehicle circling area'
+            if 'vehicle:blocking'  in f: return 'Vehicle blocking'
+            if 'vehicle:'          in f: return 'Suspicious vehicle'
+        # Network
+        for f in flags:
+            if 'network:' in f: return 'Known threat from network'
+        # Delivery (low priority, real description)
+        for f in flags:
+            if 'delivery:' in f: return 'Delivery detected'
+        # Time-based flags are lowest priority — never show as primary reason
+        # If we only have time/predict flags, show a generic message
+        non_context_flags = [
+            f for f in flags
+            if not f.startswith('time:')
+            and not f.startswith('predict:')
+            and not f.startswith('away:')
+        ]
+        if not non_context_flags:
+            return 'Motion detected'
+        return 'Suspicious activity'
 
